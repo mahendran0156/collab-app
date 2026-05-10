@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collab-frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: collab-frontend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: collab-frontend
+  template:
+    metadata:
+      labels:
+        app: collab-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: {{ .Values.frontend.resources.requests.memory }}
+              cpu: {{ .Values.frontend.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.frontend.resources.limits.memory }}
+              cpu: {{ .Values.frontend.resources.limits.cpu }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: collab-frontend
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: collab-frontend
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: 80
+  type: {{ .Values.frontend.service.type }}

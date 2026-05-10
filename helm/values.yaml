@@ -1,0 +1,70 @@
+# Global
+replicaCount: 2
+namespace: collab
+
+# Backend
+backend:
+  image:
+    repository: your-acr.azurecr.io/collab-backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 5000
+  env:
+    PORT: "5000"
+    JWT_SECRET: "changeme-use-k8s-secret"
+    CLIENT_URL: "https://collab.yourdomain.com"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Frontend
+frontend:
+  image:
+    repository: your-acr.azurecr.io/collab-frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# MongoDB
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: "6.0"
+  service:
+    port: 27017
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: "managed-csi"
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  host: collab.yourdomain.com
+  tls:
+    enabled: true
+    secretName: collab-tls-secret
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

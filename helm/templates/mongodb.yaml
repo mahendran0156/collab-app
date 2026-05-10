@@ -1,0 +1,48 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: collab-mongodb
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: collab-mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collab-mongodb
+  template:
+    metadata:
+      labels:
+        app: collab-mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: {{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.persistence.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: collab-mongodb
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: collab-mongodb
+  ports:
+    - port: {{ .Values.mongodb.service.port }}
+      targetPort: 27017
+  type: ClusterIP
+{{- end }}

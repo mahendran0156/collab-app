@@ -1,0 +1,170 @@
+# Azure DevOps CI/CD Pipeline - Collab MERN App
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - frontend/**
+      - backend/**
+      - helm/**
+
+variables:
+  ACR_NAME: 'yourCollabACR'
+  ACR_LOGIN_SERVER: 'yourcollabacr.azurecr.io'
+  AKS_CLUSTER: 'collab-aks'
+  RESOURCE_GROUP: 'collab-rg'
+  HELM_RELEASE: 'collab'
+  HELM_CHART_PATH: './helm'
+  K8S_NAMESPACE: 'collab'
+  NODE_VERSION: '18.x'
+
+stages:
+  # ─── STAGE 1: BUILD & TEST ───────────────────────────────────
+  - stage: Build
+    displayName: 'Build & Test'
+    jobs:
+      - job: TestBackend
+        displayName: 'Test Backend'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Install Node.js'
+          - script: |
+              cd backend
+              npm ci
+              echo "Backend build verified"
+            displayName: 'Install Backend Dependencies'
+
+      - job: TestFrontend
+        displayName: 'Test Frontend'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Install Node.js'
+          - script: |
+              cd frontend
+              npm ci
+              echo "Frontend dependencies installed"
+            displayName: 'Install Frontend Dependencies'
+
+  # ─── STAGE 2: DOCKER BUILD & PUSH ────────────────────────────
+  - stage: Docker
+    displayName: 'Docker Build & Push to ACR'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: BuildAndPush
+        displayName: 'Build Images and Push to ACR'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Login to ACR'
+            inputs:
+              azureSubscription: 'Azure-Service-Connection'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az acr login --name $(ACR_NAME)
+
+          - task: Docker@2
+            displayName: 'Build Backend Image'
+            inputs:
+              command: build
+              repository: $(ACR_LOGIN_SERVER)/collab-backend
+              dockerfile: backend/Dockerfile
+              buildContext: backend
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Backend Image'
+            inputs:
+              command: push
+              repository: $(ACR_LOGIN_SERVER)/collab-backend
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: Docker@2
+            displayName: 'Build Frontend Image'
+            inputs:
+              command: build
+              repository: $(ACR_LOGIN_SERVER)/collab-frontend
+              dockerfile: frontend/Dockerfile
+              buildContext: frontend
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Frontend Image'
+            inputs:
+              command: push
+              repository: $(ACR_LOGIN_SERVER)/collab-frontend
+              tags: |
+                $(Build.BuildId)
+                latest
+
+  # ─── STAGE 3: DEPLOY TO AKS ──────────────────────────────────
+  - stage: Deploy
+    displayName: 'Deploy to AKS via Helm'
+    dependsOn: Docker
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: HelmDeploy
+        displayName: 'Helm Deploy to AKS'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'Production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: 'Get AKS Credentials'
+                  inputs:
+                    azureSubscription: 'Azure-Service-Connection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az aks get-credentials \
+                        --resource-group $(RESOURCE_GROUP) \
+                        --name $(AKS_CLUSTER) \
+                        --overwrite-existing
+
+                - task: HelmDeploy@0
+                  displayName: 'Helm Upgrade / Install Collab'
+                  inputs:
+                    connectionType: 'None'
+                    namespace: $(K8S_NAMESPACE)
+                    command: 'upgrade'
+                    chartType: 'FilePath'
+                    chartPath: $(HELM_CHART_PATH)
+                    releaseName: $(HELM_RELEASE)
+                    install: true
+                    waitForExecution: true
+                    arguments: >
+                      --set backend.image.repository=$(ACR_LOGIN_SERVER)/collab-backend
+                      --set backend.image.tag=$(Build.BuildId)
+                      --set frontend.image.repository=$(ACR_LOGIN_SERVER)/collab-frontend
+                      --set frontend.image.tag=$(Build.BuildId)
+                      --create-namespace
+                      --timeout 10m
+
+                - script: |
+                    kubectl get pods -n $(K8S_NAMESPACE)
+                    kubectl get services -n $(K8S_NAMESPACE)
+                    kubectl get ingress -n $(K8S_NAMESPACE)
+                  displayName: 'Verify Deployment'

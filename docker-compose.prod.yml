@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  mongodb:
+    image: mongo:6.0
+    container_name: collab-mongodb
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - collab-net
+    # NOTE: Do NOT expose 27017 in production
+
+  backend:
+    image: ${DOCKER_USERNAME}/collab-backend:latest
+    container_name: collab-backend
+    restart: always
+    environment:
+      PORT: "5000"
+      MONGO_URI: "${MONGO_URI}"
+      JWT_SECRET: "${JWT_SECRET}"
+      CLIENT_URL: "${CLIENT_URL}"
+    networks:
+      - collab-net
+    depends_on:
+      - mongodb
+
+  frontend:
+    image: ${DOCKER_USERNAME}/collab-frontend:latest
+    container_name: collab-frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - collab-net
+    depends_on:
+      - backend
+
+networks:
+  collab-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
