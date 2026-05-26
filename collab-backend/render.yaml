@@ -1,0 +1,23 @@
+# render.yaml — Render Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: collab-backend
+    env: docker                 # ← tells Render to build from Dockerfile
+    region: oregon
+    plan: free
+    rootDir: backend            # folder inside your repo that has the Dockerfile
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false             # set manually in Render dashboard (never commit!)
+      - key: JWT_SECRET
+        sync: false             # set manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false             # paste your frontend Render URL here

@@ -1,0 +1,40 @@
+# Dependencies (reinstalled inside container)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (NEVER bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker files (no need to copy these into the image)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Dev/editor noise
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+
+# Test files
+__tests__
+*.test.js
+*.spec.js
+coverage
+
+# Render config (runtime only)
+render.yaml
