@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Scene3D from '../components/Scene3D.jsx';
 import { API_URL } from '../config';
 
-const fields = ['design', 'music', 'social-media', 'development', 'other'];
+const fields = ['developer', 'designer', 'musician', 'social-media', 'other'];
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', email: '', password: '', field: 'other' });
@@ -14,15 +14,23 @@ export default function Register() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError('');
-    try {
-      await register(form);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
-    } finally { setLoading(false); }
-  };
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+  try {
+    await register({
+      username: form.name || form.username,  // handle both
+      email: form.email,
+      password: form.password,
+      field: form.field || 'other',
+    })
+    navigate('/dashboard')
+  } catch (err) {
+    setError(err.response?.data?.error || 'Registration failed')
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', padding:'80px 20px 20px' }}>
