@@ -11,7 +11,7 @@ export default function Explore() {
   const fieldColors = { design:'#a855f7', music:'#ec4899', 'social-media':'#06b6d4', development:'#f59e0b', other:'#94a3b8' };
 
   useEffect(() => {
-    api.get('/users').then(r => setUsers(r.data));
+    api.get(`${API}/users`).then(r => setUsers(r.data));
   }, []);
 
   return (
