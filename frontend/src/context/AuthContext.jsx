@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from 'axios'  // ← THIS WAS MISSING — causes "axios is not defined"
 
 const AuthContext = createContext({})
 
 // Vite uses import.meta.env — NOT process.env
-const API = import.meta.env.VITE_API_URL ;
+const API = import.meta.env.VITE_API_URL 
+  || 'https://collab-backend-98o3.onrender.com'
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null)
@@ -16,8 +17,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!token) { setLoading(false); return }
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    axios.get(`${API}/users/profile`)
-      .then(res => setUser(res.data))
+    axios.get(`${API}/api/users/profile`)
+      .then(res => setUser(res.data.user))
       .catch(() => {
         localStorage.removeItem('collab_token')
         delete axios.defaults.headers.common['Authorization']
@@ -27,7 +28,7 @@ export function AuthProvider({ children }) {
   }, []) // run once on mount only
 
   const login = async (email, password) => {
-    const res = await axios.post(`${API}/auth/login`, { email, password })
+    const res = await axios.post(`${API}/api/auth/login`, { email, password })
     const { token: t, user: u } = res.data
     localStorage.setItem('collab_token', t)
     axios.defaults.headers.common['Authorization'] = `Bearer ${t}`
@@ -35,8 +36,8 @@ export function AuthProvider({ children }) {
     return u
   }
 
-  const register = async (data) => {
-    const res = await axios.post(`${API}/auth/register`, data)
+  const register = async (formData) => {
+    const res = await axios.post(`${API}/api/auth/register`, formData)
     const { token: t, user: u } = res.data
     localStorage.setItem('collab_token', t)
     axios.defaults.headers.common['Authorization'] = `Bearer ${t}`
@@ -47,14 +48,18 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('collab_token')
     delete axios.defaults.headers.common['Authorization']
-    setToken(null); setUser(null)
+    setToken(null)
+    setUser(null)
   }
 
+  const updateUser = (updatedUser) => setUser(updatedUser)
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => useContext(AuthContext)
+export default AuthContext

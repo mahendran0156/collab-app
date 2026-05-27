@@ -17,13 +17,13 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
-      port: 5173,
+      port: 3000,
     },
 
     build: {
       outDir: 'dist',
       sourcemap: false,
-      target: 'esnext',   // ← THIS fixes the top-level await error
+      target: 'esnext',
     },
   }
 })
