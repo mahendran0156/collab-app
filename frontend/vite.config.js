@@ -3,12 +3,11 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   return {
     plugins: [react()],
-    
+
     define: {
-      // Explicitly make env vars available in build
       'import.meta.env.VITE_API_URL': JSON.stringify(
         env.VITE_API_URL || 'https://collab-backend-98o3.onrender.com'
       ),
@@ -24,6 +23,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false,
+      target: 'esnext',   // ← THIS fixes the top-level await error
     },
   }
 })
