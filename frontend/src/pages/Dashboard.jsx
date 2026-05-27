@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'https://collab-backend-chdh.onrender.com';
 
 export default function Dashboard() {
   const { user } = useAuth();

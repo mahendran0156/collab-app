@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import ProjectCard from '../components/ProjectCard.jsx';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_URL || 'https://collab-backend-chdh.onrender.com';
 const categories = ['all', 'design', 'music', 'social-media', 'development', 'other'];
 const statuses = ['all', 'open', 'in-progress', 'completed'];
 
