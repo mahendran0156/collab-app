@@ -1,4 +1,14 @@
 import React, { useMemo } from 'react'
+// Wrap in try-catch so if 3D fails, rest of app still loads
+import { Suspense } from 'react'
+
+// In your Scene3D component wrap everything:
+try {
+  // your three.js code
+} catch(e) {
+  console.warn('3D scene failed to load:', e)
+  return null  // return empty instead of crashing whole app
+}
 
 export default function Scene3D({ height = '100vh' }) {
   // Generate stars ONCE - never on re-render
