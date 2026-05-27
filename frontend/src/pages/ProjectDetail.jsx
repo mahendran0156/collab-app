@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const API = import.meta.env.VITE_API_URL || 'https://collab-backend-chdh.onrender.com';
-
+const API = import.meta.env.VITE_API_URL;
 export default function ProjectDetail() {
   const { id } = useParams();
   const { user } = useAuth();
