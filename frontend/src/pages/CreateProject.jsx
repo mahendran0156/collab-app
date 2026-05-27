@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../api'
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -15,8 +16,15 @@ export default function CreateProject() {
     setLoading(true); setError('');
     try {
       const data = { ...form, tags: form.tags.split(',').map(t=>t.trim()).filter(Boolean) };
-      const res = await axios.post(`${API}/projects`, data);
-      navigate(`/projects/${res.data._id}`);
+      // In handleSubmit:
+const res = await api.post('/projects', {
+  title: form.title,
+  description: form.description,
+  category: form.category.toLowerCase(),  // must be lowercase
+  status: form.status.toLowerCase().replace(' ', '-'),
+  tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+})
+      navigate(`/projects/${res.data.project._id}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create project');
     } finally { setLoading(false); }
