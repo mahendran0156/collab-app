@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import api from '../api'
 
 const API = import.meta.env.VITE_API_URL;
@@ -26,7 +25,7 @@ const res = await api.post('/projects', {
 })
       navigate(`/projects/${res.data.project._id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create project');
+      setError(err.response?.data?.error || 'Failed to create project');
     } finally { setLoading(false); }
   };
 
