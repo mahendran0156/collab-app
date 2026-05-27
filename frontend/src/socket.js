@@ -4,8 +4,7 @@
 
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL ;
-
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://collab-backend-98o3.onrender.com';
 const socket = io(SOCKET_URL, {
   transports: ['websocket', 'polling'],  // websocket first, fallback to polling
   withCredentials: true,                  // required — matches server credentials:true

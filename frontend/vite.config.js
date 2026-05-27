@@ -7,11 +7,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://collab-backend-chdh.onrender.com',
+        target: 'https://collab-backend-98o3.onrender.com/api',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'https://collab-backend-chdh.onrender.com',
+        target: 'https://collab-backend-98o3.onrender.com',
         ws: true,
         changeOrigin: true,
       }
