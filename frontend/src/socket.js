@@ -1,7 +1,6 @@
-import { io } from 'socket.io-client'  // ← explicit import required
+import { io } from 'socket.io-client'
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL 
-  || 'https://collab-backend-98o3.onrender.com'
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://collab-backend-98o3.onrender.com'
 
 const socket = io(SOCKET_URL, {
   transports: ['websocket', 'polling'],

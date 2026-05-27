@@ -3,10 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Allow eval for Three.js/WebGL/React Three Fiber -->
-    <meta http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://collab-backend-98o3.onrender.com wss://collab-backend-98o3.onrender.com https:; worker-src blob: 'self'; media-src 'self';">
+
+    <!-- CSP: allow unsafe-eval for Three.js/WebGL/React Three Fiber -->
+    <meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-eval' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com data:;
+        img-src 'self' data: blob: https:;
+        connect-src 'self'
+          https://collab-backend-98o3.onrender.com
+          wss://collab-backend-98o3.onrender.com
+          https:
+          wss:;
+        worker-src blob: 'self';
+        media-src 'self' blob:;
+      ">
 
     <title>COLLAB — Build Together</title>
   </head>

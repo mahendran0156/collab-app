@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import axios from 'axios'  // ← THIS WAS MISSING — causes "axios is not defined"
+import axios from 'axios'
 
 const AuthContext = createContext({})
 
-// Vite uses import.meta.env — NOT process.env
-const API = import.meta.env.VITE_API_URL 
-  || 'https://collab-backend-98o3.onrender.com'
+const API = import.meta.env.VITE_API_URL || 'https://collab-backend-98o3.onrender.com'
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null)
@@ -25,7 +23,7 @@ export function AuthProvider({ children }) {
         setToken(null)
       })
       .finally(() => setLoading(false))
-  }, []) // run once on mount only
+  }, [])
 
   const login = async (email, password) => {
     const res = await axios.post(`${API}/api/auth/login`, { email, password })
