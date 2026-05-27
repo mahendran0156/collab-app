@@ -21,7 +21,7 @@ const httpServer = createServer(app);
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,                    // e.g. https://collab-frontend.onrender.com
   process.env.FRONTEND_URL_2,                  // optional second origin
-  'https://collab-backend-98o3.onrender.com/api',
+  'https://collab-frontend-sjlx.onrender.com',  // specific origin
 ].filter(Boolean);
 
 // ── HTTPS REDIRECT (Render handles TLS, but this ensures no HTTP leaks) ───────
