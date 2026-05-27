@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import ProjectCard from '../components/ProjectCard.jsx';
 
 const API = import.meta.env.VITE_API_URL;
@@ -32,8 +31,8 @@ export default function Projects() {
       if (category !== 'all') params.category = category;
       if (status !== 'all') params.status = status;
       if (search) params.search = search;
-      const res = await axios.get(`${API}/projects`, { params });
-      setProjects(res.data);
+      const res = await api.get('/projects', { params });
+      setProjects(res.data.projects);
     } catch (err) {
       console.error(err);
     } finally { setLoading(false); }
