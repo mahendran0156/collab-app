@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 const API = import.meta.env.VITE_API_URL ;
 
@@ -11,7 +11,7 @@ export default function Explore() {
   const fieldColors = { design:'#a855f7', music:'#ec4899', 'social-media':'#06b6d4', development:'#f59e0b', other:'#94a3b8' };
 
   useEffect(() => {
-    axios.get(`${API}/users`).then(r => setUsers(r.data));
+    api.get('/users').then(r => setUsers(r.data));
   }, []);
 
   return (
