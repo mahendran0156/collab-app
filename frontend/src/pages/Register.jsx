@@ -7,7 +7,7 @@ import { API_URL } from '../config';
 const fields = ['design', 'music', 'social-media', 'development', 'other'];
 
 export default function Register() {
-  const [form, setForm] = useState({ name:'', email:'', password:'', field:'other' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', field: 'other' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -35,7 +35,7 @@ export default function Register() {
         </div>
         {error && <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:8, padding:'12px 16px', marginBottom:20, color:'#f87171', fontSize:'0.88rem' }}>{error}</div>}
         <form onSubmit={handleSubmit}>
-          {[{key:'name',label:'FULL NAME',type:'text',placeholder:'Your name'},{key:'email',label:'EMAIL',type:'email',placeholder:'you@example.com'},{key:'password',label:'PASSWORD',type:'password',placeholder:'Min 6 chars'}].map(f => (
+          {[{key:'username',label:'USERNAME',type:'text',placeholder:'Your username'},{key:'email',label:'EMAIL',type:'email',placeholder:'you@example.com'},{key:'password',label:'PASSWORD',type:'password',placeholder:'Min 6 chars'}].map(f => (
             <div key={f.key} style={{ marginBottom:20 }}>
               <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'var(--text-muted)', marginBottom:8, letterSpacing:1 }}>{f.label}</label>
               <input type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e=>setForm({...form,[f.key]:e.target.value})} required />
