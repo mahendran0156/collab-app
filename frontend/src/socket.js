@@ -1,6 +1,6 @@
 // src/socket.js
 // Drop this file into your frontend/src/ folder
-// Import it wherever you need real-time features
+// Import it wherever you need real-time features 
 
 import { io } from 'socket.io-client';
 
