@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Scene3D from '../components/Scene3D.jsx';
+import { API_URL } from '../config';
+const res = await axios.post(`${API_URL}/api/auth/register`, data);
 
 const fields = ['design', 'music', 'social-media', 'development', 'other'];
 
