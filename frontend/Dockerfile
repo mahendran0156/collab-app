@@ -1,23 +1,33 @@
-FROM node:18-slim AS build
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:18-slim AS builder
 
 WORKDIR /app
 
-# Copy package files and install ALL deps (including devDeps for build)
-COPY package.json package-lock.json ./
+# Copy package files first (layer cache)
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Copy source and build
+# Copy source
 COPY . .
+
+# Build args so VITE_ vars are available at build time
+ARG VITE_API_URL
+ARG VITE_SOCKET_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+
+# Build the app
 RUN npm run build
 
-# Stage 2: Nginx to serve static files
-FROM nginx:1.25-alpine
+# ── Stage 2: Serve with Nginx ─────────────────────────────────────────────────
+FROM nginx:alpine AS runner
 
-WORKDIR /usr/share/nginx/html
-RUN rm -rf ./*
+# Copy built files
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-COPY --from=build /app/build .
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
