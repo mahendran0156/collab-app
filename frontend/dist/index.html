@@ -3,9 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#050714" />
-    <meta name="description" content="COLLAB — Where creators unite. Find partners, launch projects, build relationships." />
-    <title>COLLAB — Build Together. Create Magic.</title>
+    
+    <!-- ✅ ADD THIS LINE — fixes eval() CSP error for Three.js -->
+    <meta http-equiv="Content-Security-Policy" 
+      content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://collab-backend-98o3.onrender.com wss://collab-backend-98o3.onrender.com https:; worker-src blob: 'self';">
+    
+    <title>COLLAB</title>
     <script type="module" crossorigin src="/assets/index-256ec79a.js"></script>
     <link rel="stylesheet" href="/assets/index-a97b57d9.css">
   </head>
