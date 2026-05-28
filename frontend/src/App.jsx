@@ -12,7 +12,6 @@ import Dashboard from './pages/Dashboard.jsx';
 import Explore from './pages/Explore.jsx';
 import EditProfile from './pages/EditProfile.jsx';
 
-// ── Global error boundary ─────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(error) { return { error }; }
@@ -22,9 +21,9 @@ class ErrorBoundary extends React.Component {
       <div style={{ minHeight:'100vh', background:'#050714', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#e2e8f0', padding:40, textAlign:'center' }}>
         <div style={{ fontSize:'3rem', marginBottom:20 }}>⚠️</div>
         <h2 style={{ fontFamily:'Orbitron,sans-serif', fontSize:'1.2rem', color:'#a855f7', marginBottom:12 }}>Something went wrong</h2>
-        <p style={{ color:'#94a3b8', marginBottom:24, maxWidth:400 }}>{this.state.error.message}</p>
-        <button onClick={() => { this.setState({ error:null }); window.location.href='/'; }}
-          style={{ background:'linear-gradient(135deg,#a855f7,#ec4899)', border:'none', padding:'12px 28px', borderRadius:8, color:'white', cursor:'pointer', fontFamily:'Orbitron,sans-serif', fontSize:'0.8rem' }}>
+        <p style={{ color:'#94a3b8', marginBottom:24 }}>{this.state.error.message}</p>
+        <button onClick={() => window.location.href = '/'}
+          style={{ background:'linear-gradient(135deg,#a855f7,#ec4899)', border:'none', padding:'12px 28px', borderRadius:8, color:'white', cursor:'pointer' }}>
           Reload App
         </button>
       </div>
@@ -33,7 +32,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ── Protected route ───────────────────────────────────────────────────────
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return (
@@ -46,36 +44,27 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
-// ── Redirect logged-in users away from auth pages ─────────────────────────
 const PublicOnlyRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
   return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
-// ── Routes ────────────────────────────────────────────────────────────────
 function AppRoutes() {
   return (
     <>
       <Navbar />
       <Routes>
-        {/* Public */}
         <Route path="/"             element={<Home />} />
         <Route path="/projects"     element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
         <Route path="/explore"      element={<Explore />} />
-
-        {/* Public only — redirect to dashboard if already logged in */}
-        <Route path="/login"    element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-        <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-
-        {/* Protected */}
+        <Route path="/login"        element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+        <Route path="/register"     element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
         <Route path="/create"       element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
         <Route path="/dashboard"    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*"             element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
