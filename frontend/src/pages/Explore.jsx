@@ -2,46 +2,170 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
-const API = import.meta.env.VITE_API_URL ;
+const fields = ['all', 'developer', 'designer', 'musician', 'social-media', 'other'];
 
 export default function Explore() {
-  const [users, setUsers] = useState([]);
+  const [users,    setUsers]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
+  const [field,    setField]    = useState('all');
   const navigate = useNavigate();
-  const fieldIcons = { design:'🎨', music:'🎵', 'social-media':'📱', development:'💻', other:'✨' };
-  const fieldColors = { design:'#a855f7', music:'#ec4899', 'social-media':'#06b6d4', development:'#f59e0b', other:'#94a3b8' };
 
   useEffect(() => {
-    api.get(`${API}/users`).then(r => setUsers(r.data));
-  }, []);
+    fetchUsers();
+  }, [field]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (field  !== 'all') params.field  = field;
+      if (search)            params.search = search;
+
+      const res = await api.get('/users', { params });
+      // backend returns { users: [...], pagination: {...} }
+      setUsers(res.data.users || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Field → emoji map
+  const fieldEmoji = {
+    developer:    '💻',
+    designer:     '🎨',
+    musician:     '🎵',
+    'social-media': '📱',
+    other:        '✨',
+  };
 
   return (
     <div className="page">
-      <h1 style={{ fontFamily:'Orbitron', fontSize:'2rem', marginBottom:8, background:'var(--gradient)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Explore Creators</h1>
-      <p style={{ color:'var(--text-muted)', marginBottom:40 }}>Find talented collaborators in your field</p>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:24 }}>
-        {users.map(u => {
-          const color = fieldColors[u.field] || '#94a3b8';
-          return (
-            <div key={u._id} className="glass" style={{ padding:28, textAlign:'center', transition:'all 0.3s', cursor:'pointer' }}
-              onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-6px)'; e.currentTarget.style.borderColor=color; e.currentTarget.style.boxShadow=`0 20px 40px ${color}33`}}
-              onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.borderColor='rgba(168,85,247,0.3)'; e.currentTarget.style.boxShadow='none'}}>
-              <div style={{ width:64, height:64, borderRadius:'50%', background:`linear-gradient(135deg, ${color}, #06b6d4)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', fontWeight:800, margin:'0 auto 16px', boxShadow:`0 0 20px ${color}55` }}>
-                {u.name?.charAt(0).toUpperCase()}
+
+      {/* Header */}
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: 'Orbitron', fontSize: '2rem', marginBottom: 8, background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Explore Creators
+        </h1>
+        <p style={{ color: 'var(--text-muted)' }}>Find talented collaborators in your field</p>
+      </div>
+
+      {/* Search & Filter */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
+        <input
+          placeholder="Search by name, skill, bio..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && fetchUsers()}
+          style={{ flex: '1', minWidth: 200 }}
+        />
+        <select
+          value={field}
+          onChange={e => setField(e.target.value)}
+          style={{ width: 'auto', minWidth: 160 }}
+        >
+          {fields.map(f => (
+            <option key={f} value={f}>
+              {f === 'all' ? 'All Fields' : f.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </option>
+          ))}
+        </select>
+        <button
+          className="btn-primary"
+          onClick={fetchUsers}
+          style={{ padding: '12px 24px', fontSize: '0.8rem' }}
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Results */}
+      {loading ? (
+        <div style={{ textAlign: 'center', color: 'var(--primary)', fontFamily: 'Orbitron', padding: 60 }}>
+          Loading creators...
+        </div>
+      ) : users.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 80 }}>
+          <div style={{ fontSize: '3rem', marginBottom: 16 }}>👥</div>
+          <h3 style={{ fontFamily: 'Orbitron', color: 'var(--text-muted)' }}>No creators found</h3>
+          <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Try a different search or field filter</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
+          {users.map(u => (
+            <div
+              key={u._id}
+              className="glass"
+              onClick={() => navigate(`/users/${u._id}`)}
+              style={{ padding: 28, cursor: 'pointer', transition: 'transform 0.2s', borderRadius: 16 }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              {/* Avatar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: '50%',
+                  background: 'var(--gradient)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Orbitron', fontWeight: 700, fontSize: '1.2rem', color: '#fff',
+                  flexShrink: 0,
+                }}>
+                  {u.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 2 }}>
+                    {u.username}
+                  </div>
+                  <div style={{ color: 'var(--primary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {fieldEmoji[u.field] || '✨'}
+                    {u.field?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Creator'}
+                  </div>
+                </div>
               </div>
-              <h3 style={{ fontFamily:'Orbitron', fontSize:'0.9rem', marginBottom:8 }}>{u.name}</h3>
-              <span style={{ background:`${color}22`, border:`1px solid ${color}`, color, padding:'3px 12px', borderRadius:20, fontSize:'0.7rem', fontFamily:'Orbitron' }}>
-                {fieldIcons[u.field]} {u.field?.replace('-',' ')}
-              </span>
-              {u.bio && <p style={{ color:'var(--text-muted)', fontSize:'0.82rem', marginTop:12, lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{u.bio}</p>}
+
+              {/* Bio */}
+              {u.bio && (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: 16,
+                  overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                  {u.bio}
+                </p>
+              )}
+
+              {/* Skills */}
               {u.skills?.length > 0 && (
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6, justifyContent:'center', marginTop:12 }}>
-                  {u.skills.slice(0,3).map(s => <span key={s} style={{ background:'rgba(255,255,255,0.05)', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem', color:'var(--text-muted)' }}>{s}</span>)}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                  {u.skills.slice(0, 4).map(skill => (
+                    <span key={skill} style={{
+                      background: 'rgba(99,102,241,0.15)', color: 'var(--primary)',
+                      padding: '2px 10px', borderRadius: 12, fontSize: '0.72rem',
+                    }}>
+                      {skill}
+                    </span>
+                  ))}
+                  {u.skills.length > 4 && (
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', padding: '2px 4px' }}>
+                      +{u.skills.length - 4} more
+                    </span>
+                  )}
                 </div>
               )}
+
+              {/* Stats */}
+              <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  📁 {u.projectsOwned?.length || 0} projects
+                </span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  🤝 {u.projectsJoined?.length || 0} collabs
+                </span>
+              </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
