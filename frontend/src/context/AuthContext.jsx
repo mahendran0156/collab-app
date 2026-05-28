@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!token) { setLoading(false); return }
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    axios.get(`${API}/api/users/profile`)
+    axios.get(`${API}/api/auth/me`)
       .then(res => setUser(res.data.user))
       .catch(() => {
         localStorage.removeItem('collab_token')
@@ -50,6 +50,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  // ← This is what EditProfile calls to update user in context
   const updateUser = (updatedUser) => setUser(updatedUser)
 
   return (
