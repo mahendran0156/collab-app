@@ -6,23 +6,43 @@ import { useAuth } from '../context/AuthContext';
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [projects,  setProjects]  = useState({ owned: [], joined: [] });
-  const [profile,   setProfile]   = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [activeTab, setActiveTab] = useState('owned');
+  const [ownedProjects,  setOwnedProjects]  = useState([]);
+  const [joinedProjects, setJoinedProjects] = useState([]);
+  const [profile,        setProfile]        = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [activeTab,      setActiveTab]      = useState('owned');
 
   useEffect(() => { fetchDashboard(); }, []);
 
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/users/profile');
-      const u = res.data.user;
+      // Fetch profile AND all projects in parallel
+      const [profileRes, allProjectsRes] = await Promise.all([
+        api.get('/users/profile'),
+        api.get('/projects', { params: { limit: 100 } }),
+      ]);
+
+      const u = profileRes.data.user;
       setProfile(u);
-      setProjects({
-        owned:  Array.isArray(u.projectsOwned)  ? u.projectsOwned  : [],
-        joined: Array.isArray(u.projectsJoined) ? u.projectsJoined : [],
-      });
+
+      // Filter projects by ownership from all projects
+      const allProjects = allProjectsRes.data.projects || [];
+      const userId = u._id;
+
+      // Owned = projects where owner._id matches user
+      const owned = allProjects.filter(p =>
+        p.owner?._id === userId || p.owner === userId
+      );
+
+      // Joined = projects where user is in collaborators
+      const joined = allProjects.filter(p =>
+        p.collaborators?.some(c => c._id === userId || c === userId)
+      );
+
+      setOwnedProjects(owned);
+      setJoinedProjects(joined);
+
     } catch (err) {
       console.error('Dashboard fetch failed:', err);
     } finally {
@@ -44,15 +64,12 @@ export default function Dashboard() {
     </div>
   );
 
-  const ownedProjects  = projects.owned;
-  const joinedProjects = projects.joined;
-  const displayName    = profile?.username || user?.username || 'Creator';
-  const fieldLabel     = profile?.field
+  const displayName = profile?.username || user?.username || 'Creator';
+  const fieldLabel  = profile?.field
     ? profile.field.replace('-',' ').replace(/\b\w/g, l => l.toUpperCase())
     : 'Creator';
 
   return (
-    // ← paddingTop:90 fixes the navbar overlap
     <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto' }}>
       <div style={{ display:'flex', gap:28, flexWrap:'wrap', alignItems:'flex-start' }}>
 
@@ -92,7 +109,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Stats — shows actual numbers */}
+          {/* Stats */}
           <div className="glass" style={{ padding:20, marginBottom:16 }}>
             <div style={{ fontFamily:'Orbitron', fontSize:'0.68rem', color:'var(--text-muted)', letterSpacing:1, marginBottom:14 }}>
               STATS
@@ -100,11 +117,11 @@ export default function Dashboard() {
             {[
               { label:'Projects Owned', value: ownedProjects.length },
               { label:'Total Collabs',  value: joinedProjects.length },
-              { label:'Reviews',        value: 0 },
+              { label:'Total Projects', value: ownedProjects.length + joinedProjects.length },
             ].map(stat => (
               <div key={stat.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                 <span style={{ color:'var(--text-muted)', fontSize:'0.82rem' }}>{stat.label}</span>
-                <span style={{ fontFamily:'Orbitron', fontWeight:700, color:'var(--primary)', fontSize:'0.95rem', minWidth:20, textAlign:'right' }}>
+                <span style={{ fontFamily:'Orbitron', fontWeight:700, color:'var(--primary)', fontSize:'0.95rem' }}>
                   {stat.value}
                 </span>
               </div>
