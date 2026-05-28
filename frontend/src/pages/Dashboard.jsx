@@ -17,32 +17,24 @@ export default function Dashboard() {
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      // Fetch profile AND all projects in parallel
-      const [profileRes, allProjectsRes] = await Promise.all([
+      const [profileRes, projectsRes] = await Promise.all([
         api.get('/users/profile'),
         api.get('/projects', { params: { limit: 100 } }),
       ]);
 
-      const u = profileRes.data.user;
+      const u           = profileRes.data.user;
+      const allProjects = projectsRes.data.projects || [];
+      const userId      = String(u._id);
+
       setProfile(u);
 
-      // Filter projects by ownership from all projects
-      const allProjects = allProjectsRes.data.projects || [];
-      const userId = u._id;
-
-      // Owned = projects where owner._id matches user
-      const owned = allProjects.filter(p =>
-        p.owner?._id === userId || p.owner === userId
-      );
-
-      // Joined = projects where user is in collaborators
-      const joined = allProjects.filter(p =>
-        p.collaborators?.some(c => c._id === userId || c === userId)
-      );
-
-      setOwnedProjects(owned);
-      setJoinedProjects(joined);
-
+      // Compare as strings to avoid object vs string mismatch
+      setOwnedProjects(allProjects.filter(p =>
+        String(p.owner?._id || p.owner) === userId
+      ));
+      setJoinedProjects(allProjects.filter(p =>
+        p.collaborators?.some(c => String(c._id || c) === userId)
+      ));
     } catch (err) {
       console.error('Dashboard fetch failed:', err);
     } finally {
@@ -73,14 +65,13 @@ export default function Dashboard() {
     <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto' }}>
       <div style={{ display:'flex', gap:28, flexWrap:'wrap', alignItems:'flex-start' }}>
 
-        {/* ── Left sidebar ───────────────────────────── */}
+        {/* ── Left sidebar ── */}
         <div style={{ width:240, flexShrink:0 }}>
 
           {/* Profile card */}
           <div className="glass" style={{ padding:24, marginBottom:16, textAlign:'center' }}>
             <div style={{
-              width:64, height:64, borderRadius:'50%',
-              background:'var(--gradient)',
+              width:64, height:64, borderRadius:'50%', background:'var(--gradient)',
               display:'flex', alignItems:'center', justifyContent:'center',
               fontFamily:'Orbitron', fontWeight:700, fontSize:'1.5rem',
               margin:'0 auto 10px', color:'#fff',
@@ -115,7 +106,7 @@ export default function Dashboard() {
               STATS
             </div>
             {[
-              { label:'Projects Owned', value: ownedProjects.length },
+              { label:'Projects Owned', value: ownedProjects.length  },
               { label:'Total Collabs',  value: joinedProjects.length },
               { label:'Total Projects', value: ownedProjects.length + joinedProjects.length },
             ].map(stat => (
@@ -129,21 +120,24 @@ export default function Dashboard() {
           </div>
 
           {/* Buttons */}
-          <button className="btn-primary" onClick={() => navigate('/create')}
+          <button className="btn-primary"
+            onClick={() => navigate('/create')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             + New Project
           </button>
-          <button className="btn-outline" onClick={() => navigate('/profile/edit')}
+          <button className="btn-outline"
+            onClick={() => navigate('/edit-profile')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             Edit Profile
           </button>
-          <button onClick={() => { logout(); navigate('/'); }}
+          <button
+            onClick={() => { logout(); navigate('/'); }}
             style={{ width:'100%', padding:12, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer', fontSize:'0.85rem' }}>
             Logout
           </button>
         </div>
 
-        {/* ── Main content ────────────────────────────── */}
+        {/* ── Main content ── */}
         <div style={{ flex:1, minWidth:0 }}>
 
           {/* Tabs */}

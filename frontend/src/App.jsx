@@ -10,6 +10,7 @@ import ProjectDetail from './pages/ProjectDetail.jsx';
 import CreateProject from './pages/CreateProject.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Explore from './pages/Explore.jsx';
+import EditProfile from './pages/EditProfile.jsx';
 
 // ── Global error boundary ─────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -17,32 +18,17 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) { return { error }; }
   componentDidCatch(error, info) { console.error('App error:', error, info); }
   render() {
-    if (this.state.error) {
-      return (
-        <div style={{
-          minHeight:'100vh', background:'#050714', display:'flex',
-          flexDirection:'column', alignItems:'center', justifyContent:'center',
-          color:'#e2e8f0', padding:40, textAlign:'center'
-        }}>
-          <div style={{ fontSize:'3rem', marginBottom:20 }}>⚠️</div>
-          <h2 style={{ fontFamily:'Orbitron,sans-serif', fontSize:'1.2rem', color:'#a855f7', marginBottom:12 }}>
-            Something went wrong
-          </h2>
-          <p style={{ color:'#94a3b8', marginBottom:24, maxWidth:400 }}>
-            {this.state.error.message}
-          </p>
-          <button
-            onClick={() => { this.setState({ error: null }); window.location.href = '/'; }}
-            style={{
-              background:'linear-gradient(135deg,#a855f7,#ec4899)',
-              border:'none', padding:'12px 28px', borderRadius:8,
-              color:'white', cursor:'pointer', fontFamily:'Orbitron,sans-serif', fontSize:'0.8rem'
-            }}>
-            Reload App
-          </button>
-        </div>
-      );
-    }
+    if (this.state.error) return (
+      <div style={{ minHeight:'100vh', background:'#050714', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#e2e8f0', padding:40, textAlign:'center' }}>
+        <div style={{ fontSize:'3rem', marginBottom:20 }}>⚠️</div>
+        <h2 style={{ fontFamily:'Orbitron,sans-serif', fontSize:'1.2rem', color:'#a855f7', marginBottom:12 }}>Something went wrong</h2>
+        <p style={{ color:'#94a3b8', marginBottom:24, maxWidth:400 }}>{this.state.error.message}</p>
+        <button onClick={() => { this.setState({ error:null }); window.location.href='/'; }}
+          style={{ background:'linear-gradient(135deg,#a855f7,#ec4899)', border:'none', padding:'12px 28px', borderRadius:8, color:'white', cursor:'pointer', fontFamily:'Orbitron,sans-serif', fontSize:'0.8rem' }}>
+          Reload App
+        </button>
+      </div>
+    );
     return this.props.children;
   }
 }
@@ -51,16 +37,8 @@ class ErrorBoundary extends React.Component {
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div style={{
-      display:'flex', justifyContent:'center', alignItems:'center',
-      height:'100vh', color:'#a855f7', fontFamily:'Orbitron,sans-serif',
-      background:'#050714', flexDirection:'column', gap:16
-    }}>
-      <div style={{
-        width:40, height:40, border:'3px solid #a855f7',
-        borderTopColor:'transparent', borderRadius:'50%',
-        animation:'spin 0.8s linear infinite'
-      }}/>
+    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', color:'#a855f7', fontFamily:'Orbitron,sans-serif', background:'#050714', flexDirection:'column', gap:16 }}>
+      <div style={{ width:40, height:40, border:'3px solid #a855f7', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       Loading...
     </div>
@@ -68,7 +46,7 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
-// ── Redirect if already logged in ────────────────────────────────────────
+// ── Redirect logged-in users away from auth pages ─────────────────────────
 const PublicOnlyRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -81,7 +59,7 @@ function AppRoutes() {
     <>
       <Navbar />
       <Routes>
-        {/* Public routes */}
+        {/* Public */}
         <Route path="/"             element={<Home />} />
         <Route path="/projects"     element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
@@ -91,9 +69,10 @@ function AppRoutes() {
         <Route path="/login"    element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
 
-        {/* Protected routes — require login */}
-        <Route path="/create"    element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        {/* Protected */}
+        <Route path="/create"       element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+        <Route path="/dashboard"    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
