@@ -3,13 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
 const fields = ['all', 'developer', 'designer', 'musician', 'social-media', 'other'];
-
 const fieldEmoji = {
-  developer:      '💻',
-  designer:       '🎨',
-  musician:       '🎵',
-  'social-media': '📱',
-  other:          '✨',
+  developer:'💻', designer:'🎨', musician:'🎵', 'social-media':'📱', other:'✨',
 };
 
 export default function Explore() {
@@ -38,9 +33,11 @@ export default function Explore() {
   };
 
   return (
-    <div className="page">
+    // ← paddingTop:90 fixes navbar overlap on all pages
+    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto' }}>
+
       {/* Header */}
-      <div style={{ marginBottom:40 }}>
+      <div style={{ marginBottom:32 }}>
         <h1 style={{ fontFamily:'Orbitron', fontSize:'2rem', marginBottom:8, background:'var(--gradient)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
           Explore Creators
         </h1>
@@ -85,7 +82,7 @@ export default function Explore() {
             <div
               key={u._id}
               className="glass"
-              onClick={() => navigate(`/projects?search=${u.username}`)}
+              onClick={() => navigate(`/projects?search=${encodeURIComponent(u.username)}`)}
               style={{ padding:24, cursor:'pointer', transition:'transform 0.2s', borderRadius:16 }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
@@ -126,9 +123,7 @@ export default function Explore() {
                     </span>
                   ))}
                   {u.skills.length > 4 && (
-                    <span style={{ color:'var(--text-muted)', fontSize:'0.7rem', padding:'2px 4px' }}>
-                      +{u.skills.length - 4}
-                    </span>
+                    <span style={{ color:'var(--text-muted)', fontSize:'0.7rem' }}>+{u.skills.length - 4}</span>
                   )}
                 </div>
               )}

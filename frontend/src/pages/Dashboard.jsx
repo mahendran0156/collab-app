@@ -20,8 +20,8 @@ export default function Dashboard() {
       const u = res.data.user;
       setProfile(u);
       setProjects({
-        owned:  u.projectsOwned  || [],
-        joined: u.projectsJoined || [],
+        owned:  Array.isArray(u.projectsOwned)  ? u.projectsOwned  : [],
+        joined: Array.isArray(u.projectsJoined) ? u.projectsJoined : [],
       });
     } catch (err) {
       console.error('Dashboard fetch failed:', err);
@@ -39,24 +39,24 @@ export default function Dashboard() {
   };
 
   if (loading) return (
-    <div style={{ textAlign:'center', padding:80, color:'var(--primary)', fontFamily:'Orbitron' }}>
+    <div style={{ textAlign:'center', paddingTop:120, color:'var(--primary)', fontFamily:'Orbitron' }}>
       Loading dashboard...
     </div>
   );
 
-  const ownedProjects  = projects.owned  || [];
-  const joinedProjects = projects.joined || [];
+  const ownedProjects  = projects.owned;
+  const joinedProjects = projects.joined;
   const displayName    = profile?.username || user?.username || 'Creator';
   const fieldLabel     = profile?.field
     ? profile.field.replace('-',' ').replace(/\b\w/g, l => l.toUpperCase())
     : 'Creator';
 
   return (
-    <div style={{ padding:'24px 32px', maxWidth:1200, margin:'0 auto' }}>
-
+    // ← paddingTop:90 fixes the navbar overlap
+    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto' }}>
       <div style={{ display:'flex', gap:28, flexWrap:'wrap', alignItems:'flex-start' }}>
 
-        {/* ── Left sidebar ──────────────────────────────────── */}
+        {/* ── Left sidebar ───────────────────────────── */}
         <div style={{ width:240, flexShrink:0 }}>
 
           {/* Profile card */}
@@ -92,7 +92,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Stats */}
+          {/* Stats — shows actual numbers */}
           <div className="glass" style={{ padding:20, marginBottom:16 }}>
             <div style={{ fontFamily:'Orbitron', fontSize:'0.68rem', color:'var(--text-muted)', letterSpacing:1, marginBottom:14 }}>
               STATS
@@ -100,18 +100,18 @@ export default function Dashboard() {
             {[
               { label:'Projects Owned', value: ownedProjects.length },
               { label:'Total Collabs',  value: joinedProjects.length },
-              { label:'Reviews',        value: profile?.reviews?.length || 0 },
+              { label:'Reviews',        value: 0 },
             ].map(stat => (
               <div key={stat.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                 <span style={{ color:'var(--text-muted)', fontSize:'0.82rem' }}>{stat.label}</span>
-                <span style={{ fontFamily:'Orbitron', fontWeight:700, color:'var(--primary)', fontSize:'0.9rem' }}>
+                <span style={{ fontFamily:'Orbitron', fontWeight:700, color:'var(--primary)', fontSize:'0.95rem', minWidth:20, textAlign:'right' }}>
                   {stat.value}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Action buttons */}
+          {/* Buttons */}
           <button className="btn-primary" onClick={() => navigate('/create')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             + New Project
@@ -126,7 +126,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* ── Main content ───────────────────────────────────── */}
+        {/* ── Main content ────────────────────────────── */}
         <div style={{ flex:1, minWidth:0 }}>
 
           {/* Tabs */}
