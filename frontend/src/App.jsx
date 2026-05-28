@@ -24,15 +24,15 @@ class ErrorBoundary extends React.Component {
           flexDirection:'column', alignItems:'center', justifyContent:'center',
           color:'#e2e8f0', padding:40, textAlign:'center'
         }}>
-          <div style={{fontSize:'3rem', marginBottom:20}}>⚠️</div>
-          <h2 style={{fontFamily:'Orbitron,sans-serif', fontSize:'1.2rem', color:'#a855f7', marginBottom:12}}>
+          <div style={{ fontSize:'3rem', marginBottom:20 }}>⚠️</div>
+          <h2 style={{ fontFamily:'Orbitron,sans-serif', fontSize:'1.2rem', color:'#a855f7', marginBottom:12 }}>
             Something went wrong
           </h2>
-          <p style={{color:'#94a3b8', marginBottom:24, maxWidth:400}}>
+          <p style={{ color:'#94a3b8', marginBottom:24, maxWidth:400 }}>
             {this.state.error.message}
           </p>
           <button
-            onClick={() => { this.setState({ error: null }); window.location.href='/'; }}
+            onClick={() => { this.setState({ error: null }); window.location.href = '/'; }}
             style={{
               background:'linear-gradient(135deg,#a855f7,#ec4899)',
               border:'none', padding:'12px 28px', borderRadius:8,
@@ -65,7 +65,14 @@ const ProtectedRoute = ({ children }) => {
       Loading...
     </div>
   );
-  return user ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" replace />;
+};
+
+// ── Redirect if already logged in ────────────────────────────────────────
+const PublicOnlyRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
 // ── Routes ────────────────────────────────────────────────────────────────
@@ -74,15 +81,22 @@ function AppRoutes() {
     <>
       <Navbar />
       <Routes>
-        <Route path="/"           element={<Home />} />
-        <Route path="/login"      element={<Login />} />
-        <Route path="/register"   element={<Register />} />
-        <Route path="/projects"   element={<Projects />} />
+        {/* Public routes */}
+        <Route path="/"             element={<Home />} />
+        <Route path="/projects"     element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/explore"    element={<Explore />} />
-        <Route path="/create"     element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
-        <Route path="/dashboard"  element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="*"           element={<Navigate to="/" />} />
+        <Route path="/explore"      element={<Explore />} />
+
+        {/* Public only — redirect to dashboard if already logged in */}
+        <Route path="/login"    element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+        <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+
+        {/* Protected routes — require login */}
+        <Route path="/create"    element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
