@@ -6,17 +6,35 @@ import { useAuth } from '../context/AuthContext';
 const fieldOptions = ['developer','designer','musician','social-media','other'];
 
 export default function EditProfile() {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [form,    setForm]    = useState({ username:'', bio:'', field:'other', skills:'', github:'', portfolio:'' });
+
+  const [form,    setForm]    = useState({
+    username:'', bio:'', field:'other',
+    skills:'', github:'', portfolio:''
+  });
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [message, setMessage] = useState('');
   const [error,   setError]   = useState('');
 
-  // Load current profile data
+  // Pre-fill form with current user data from AuthContext
+  // and also fetch fresh from API to get latest saved data
   useEffect(() => {
-    api.get('/auth/me')
+    // Pre-fill immediately from auth context (no wait)
+    if (user) {
+      setForm({
+        username:  user.username  || '',
+        bio:       user.bio       || '',
+        field:     user.field     || 'other',
+        skills:    Array.isArray(user.skills) ? user.skills.join(', ') : '',
+        github:    user.github    || '',
+        portfolio: user.portfolio || '',
+      });
+    }
+
+    // Then fetch fresh from API to override with latest saved values
+    api.get('/users/profile')
       .then(res => {
         const u = res.data.user;
         setForm({
@@ -28,7 +46,7 @@ export default function EditProfile() {
           portfolio: u.portfolio || '',
         });
       })
-      .catch(err => console.error('Load profile error:', err))
+      .catch(err => console.error('Profile load error:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -36,21 +54,29 @@ export default function EditProfile() {
     e.preventDefault();
     setSaving(true); setError(''); setMessage('');
     try {
-      const res = await api.put('/users/profile', {
+      const payload = {
         username:  form.username.trim(),
         bio:       form.bio.trim(),
         field:     form.field,
         skills:    form.skills.split(',').map(s => s.trim()).filter(Boolean),
         github:    form.github.trim(),
         portfolio: form.portfolio.trim(),
-      });
+      };
+      const res = await api.put('/users/profile', payload);
+
+      // Update auth context so navbar/dashboard sees new name immediately
       if (updateUser) updateUser(res.data.user);
+
       setMessage('Profile updated successfully!');
-      // Use navigate — NOT window.location (preserves auth)
-      setTimeout(() => navigate('/dashboard'), 1200);
+
+      // Navigate back to dashboard after short delay
+      // Dashboard will re-fetch on location.key change
+      setTimeout(() => navigate('/dashboard'), 1000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile');
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return (
@@ -79,14 +105,20 @@ export default function EditProfile() {
 
       <div className="glass" style={{ padding:36 }}>
         <form onSubmit={handleSubmit}>
+
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>USERNAME</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              USERNAME
+            </label>
             <input type="text" value={form.username}
-              onChange={e => setForm({...form, username:e.target.value})} required />
+              onChange={e => setForm({...form, username:e.target.value})}
+              required />
           </div>
 
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>YOUR FIELD</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              YOUR FIELD
+            </label>
             <select value={form.field} onChange={e => setForm({...form, field:e.target.value})}>
               {fieldOptions.map(f => (
                 <option key={f} value={f}>
@@ -97,29 +129,37 @@ export default function EditProfile() {
           </div>
 
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>BIO</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              BIO
+            </label>
             <textarea value={form.bio}
               onChange={e => setForm({...form, bio:e.target.value})}
               placeholder="Tell collaborators about yourself..."
-              style={{ minHeight:80, resize:'vertical' }} />
+              style={{ minHeight:90, resize:'vertical' }} />
           </div>
 
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>SKILLS (comma separated)</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              SKILLS (comma separated)
+            </label>
             <input type="text" value={form.skills}
               onChange={e => setForm({...form, skills:e.target.value})}
               placeholder="React, Node.js, UI Design..." />
           </div>
 
           <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>GITHUB URL</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              GITHUB URL
+            </label>
             <input type="text" value={form.github}
               onChange={e => setForm({...form, github:e.target.value})}
               placeholder="https://github.com/username" />
           </div>
 
           <div style={{ marginBottom:28 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>PORTFOLIO / WEBSITE</label>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>
+              PORTFOLIO / WEBSITE
+            </label>
             <input type="text" value={form.portfolio}
               onChange={e => setForm({...form, portfolio:e.target.value})}
               placeholder="https://yoursite.com" />
@@ -136,6 +176,7 @@ export default function EditProfile() {
               Cancel
             </button>
           </div>
+
         </form>
       </div>
     </div>
