@@ -1,130 +1,137 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
-export default function EditProject() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+const fieldOptions = ['developer','designer','musician','social-media','other'];
 
-  const [form,    setForm]    = useState({ title:'', description:'', category:'development', status:'open', tags:'' });
+export default function EditProfile() {
+  const { updateUser } = useAuth();
+  const navigate = useNavigate();
+  const [form,    setForm]    = useState({ username:'', bio:'', field:'other', skills:'', github:'', portfolio:'' });
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
+  const [message, setMessage] = useState('');
   const [error,   setError]   = useState('');
 
-  // Load existing project data
+  // Load current profile data
   useEffect(() => {
-    api.get(`/projects/${id}`)
+    api.get('/auth/me')
       .then(res => {
-        const p = res.data.project;
-        // Verify ownership
-        if (String(p.owner?._id || p.owner) !== String(user?._id)) {
-          navigate(`/projects/${id}`);
-          return;
-        }
+        const u = res.data.user;
         setForm({
-          title:       p.title       || '',
-          description: p.description || '',
-          category:    p.category    || 'development',
-          status:      p.status      || 'open',
-          tags:        Array.isArray(p.tags) ? p.tags.join(', ') : '',
+          username:  u.username  || '',
+          bio:       u.bio       || '',
+          field:     u.field     || 'other',
+          skills:    Array.isArray(u.skills) ? u.skills.join(', ') : '',
+          github:    u.github    || '',
+          portfolio: u.portfolio || '',
         });
       })
-      .catch(() => navigate('/projects'))
+      .catch(err => console.error('Load profile error:', err))
       .finally(() => setLoading(false));
-  }, [id, user]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setMessage('');
     try {
-      await api.put(`/projects/${id}`, {
-        title:       form.title.trim(),
-        description: form.description.trim(),
-        category:    form.category,
-        status:      form.status,
-        tags:        form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      const res = await api.put('/users/profile', {
+        username:  form.username.trim(),
+        bio:       form.bio.trim(),
+        field:     form.field,
+        skills:    form.skills.split(',').map(s => s.trim()).filter(Boolean),
+        github:    form.github.trim(),
+        portfolio: form.portfolio.trim(),
       });
-      navigate(`/projects/${id}`);
+      if (updateUser) updateUser(res.data.user);
+      setMessage('Profile updated successfully!');
+      // Use navigate — NOT window.location (preserves auth)
+      setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update project');
+      setError(err.response?.data?.error || 'Failed to update profile');
     } finally { setSaving(false); }
   };
 
   if (loading) return (
     <div style={{ textAlign:'center', paddingTop:120, color:'#a855f7', fontFamily:'Orbitron,sans-serif' }}>
-      Loading project...
+      Loading...
     </div>
   );
 
   return (
-    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:680, margin:'0 auto' }}>
+    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:600, margin:'0 auto' }}>
       <h1 style={{ fontFamily:'Orbitron', fontSize:'1.8rem', marginBottom:8, background:'linear-gradient(135deg,#a855f7,#ec4899)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-        Edit Project
+        Edit Profile
       </h1>
-      <p style={{ color:'#94a3b8', marginBottom:40 }}>Update your project details</p>
+      <p style={{ color:'#94a3b8', marginBottom:32 }}>Update your creator profile</p>
 
+      {message && (
+        <div style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.4)', borderRadius:8, padding:'12px 16px', marginBottom:20, color:'#10b981' }}>
+          ✅ {message}
+        </div>
+      )}
       {error && (
         <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:8, padding:'12px 16px', marginBottom:20, color:'#f87171' }}>
-          {error}
+          ❌ {error}
         </div>
       )}
 
-      <div className="glass" style={{ padding:40 }}>
+      <div className="glass" style={{ padding:36 }}>
         <form onSubmit={handleSubmit}>
-          {/* Title */}
-          <div style={{ marginBottom:24 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>PROJECT TITLE</label>
-            <input type="text" value={form.title}
-              onChange={e => setForm({...form, title:e.target.value})} required />
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>USERNAME</label>
+            <input type="text" value={form.username}
+              onChange={e => setForm({...form, username:e.target.value})} required />
           </div>
 
-          {/* Description */}
-          <div style={{ marginBottom:24 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>DESCRIPTION</label>
-            <textarea value={form.description}
-              onChange={e => setForm({...form, description:e.target.value})}
-              required style={{ minHeight:120, resize:'vertical' }} />
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>YOUR FIELD</label>
+            <select value={form.field} onChange={e => setForm({...form, field:e.target.value})}>
+              {fieldOptions.map(f => (
+                <option key={f} value={f}>
+                  {f.replace('-',' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Category + Status */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24 }}>
-            <div>
-              <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>CATEGORY</label>
-              <select value={form.category} onChange={e => setForm({...form, category:e.target.value})}>
-                <option value="development">Development</option>
-                <option value="design">Design</option>
-                <option value="music">Music</option>
-                <option value="social-media">Social Media</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>STATUS</label>
-              <select value={form.status} onChange={e => setForm({...form, status:e.target.value})}>
-                <option value="open">Open</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>BIO</label>
+            <textarea value={form.bio}
+              onChange={e => setForm({...form, bio:e.target.value})}
+              placeholder="Tell collaborators about yourself..."
+              style={{ minHeight:80, resize:'vertical' }} />
           </div>
 
-          {/* Tags */}
-          <div style={{ marginBottom:32 }}>
-            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>TAGS (comma separated)</label>
-            <input type="text" value={form.tags}
-              onChange={e => setForm({...form, tags:e.target.value})}
-              placeholder="react, design, music-production..." />
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>SKILLS (comma separated)</label>
+            <input type="text" value={form.skills}
+              onChange={e => setForm({...form, skills:e.target.value})}
+              placeholder="React, Node.js, UI Design..." />
           </div>
 
-          <div style={{ display:'flex', gap:16 }}>
-            <button type="submit" className="btn-primary" style={{ flex:1, padding:'14px' }} disabled={saving}>
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>GITHUB URL</label>
+            <input type="text" value={form.github}
+              onChange={e => setForm({...form, github:e.target.value})}
+              placeholder="https://github.com/username" />
+          </div>
+
+          <div style={{ marginBottom:28 }}>
+            <label style={{ display:'block', fontFamily:'Orbitron', fontSize:'0.7rem', color:'#94a3b8', marginBottom:8, letterSpacing:1 }}>PORTFOLIO / WEBSITE</label>
+            <input type="text" value={form.portfolio}
+              onChange={e => setForm({...form, portfolio:e.target.value})}
+              placeholder="https://yoursite.com" />
+          </div>
+
+          <div style={{ display:'flex', gap:12 }}>
+            <button type="submit" className="btn-primary"
+              style={{ flex:1, padding:14 }} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button type="button" className="btn-outline"
-              onClick={() => navigate(`/projects/${id}`)}
+              onClick={() => navigate('/dashboard')}
               style={{ padding:'14px 24px' }}>
               Cancel
             </button>
