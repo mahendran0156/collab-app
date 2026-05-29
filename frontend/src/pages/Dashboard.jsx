@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
   const [ownedProjects,  setOwnedProjects]  = useState([]);
   const [joinedProjects, setJoinedProjects] = useState([]);
   const [profile,        setProfile]        = useState(null);
   const [loading,        setLoading]        = useState(true);
   const [activeTab,      setActiveTab]      = useState('owned');
 
-  useEffect(() => { fetchDashboard(); }, []);
-
-  const fetchDashboard = async () => {
+  // fetchDashboard wrapped in useCallback so it can be called anytime
+  const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
       const [meRes, projectsRes] = await Promise.all([
@@ -22,39 +23,47 @@ export default function Dashboard() {
         api.get('/projects', { params: { limit: 100 } }),
       ]);
 
-      const currentUser = meRes.data.user;
+      const me          = meRes.data.user;
       const allProjects = projectsRes.data.projects || [];
-      const userId = String(currentUser._id);
+      const userId      = String(me._id);
 
-      setProfile(currentUser);
+      setProfile(me);
 
-      const owned = allProjects.filter(p =>
-        String(p.owner?._id || p.owner || '') === userId
+      setOwnedProjects(
+        allProjects.filter(p =>
+          String(p.owner?._id || p.owner || '') === userId
+        )
       );
-      const joined = allProjects.filter(p =>
-        Array.isArray(p.collaborators) &&
-        p.collaborators.some(c => String(c?._id || c || '') === userId)
+      setJoinedProjects(
+        allProjects.filter(p =>
+          Array.isArray(p.collaborators) &&
+          p.collaborators.some(c =>
+            String(c?._id || c || '') === userId
+          )
+        )
       );
-
-      setOwnedProjects(owned);
-      setJoinedProjects(joined);
     } catch (err) {
-      console.error('Dashboard error:', err);
+      console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Re-fetch every time this page is navigated to (including returning from create)
+  useEffect(() => {
+    fetchDashboard();
+  }, [location.key, fetchDashboard]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this project?')) return;
     try {
       await api.delete(`/projects/${id}`);
-      fetchDashboard();
+      fetchDashboard(); // refresh after delete
     } catch (err) { console.error(err); }
   };
 
   if (loading) return (
-    <div style={{ textAlign:'center', paddingTop:120, color:'#a855f7', fontFamily:'Orbitron' }}>
+    <div style={{ textAlign:'center', paddingTop:120, color:'#a855f7', fontFamily:'Orbitron,sans-serif' }}>
       Loading dashboard...
     </div>
   );
@@ -66,40 +75,39 @@ export default function Dashboard() {
     : 'Creator';
   const ownedCount  = ownedProjects.length;
   const joinedCount = joinedProjects.length;
-
   const activeList  = activeTab === 'owned' ? ownedProjects : joinedProjects;
 
   return (
-    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:'5%', paddingRight:'5%', maxWidth:1200, margin:'0 auto', boxSizing:'border-box' }}>
+    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto', boxSizing:'border-box' }}>
       <div style={{ display:'flex', gap:28, flexWrap:'wrap', alignItems:'flex-start' }}>
 
         {/* ── Sidebar ── */}
         <div style={{ width:240, flexShrink:0 }}>
 
-          {/* Profile */}
+          {/* Profile card */}
           <div className="glass" style={{ padding:24, marginBottom:16, textAlign:'center' }}>
             <div style={{
               width:64, height:64, borderRadius:'50%',
               background:'linear-gradient(135deg,#a855f7,#ec4899)',
               display:'flex', alignItems:'center', justifyContent:'center',
               fontFamily:'Orbitron', fontWeight:700, fontSize:'1.5rem',
-              margin:'0 auto 10px', color:'#fff', flexShrink:0,
+              margin:'0 auto 10px', color:'#fff',
             }}>
               {displayName[0]?.toUpperCase()}
             </div>
             <div style={{ fontFamily:'Orbitron', fontWeight:700, fontSize:'0.95rem', marginBottom:4, color:'#e2e8f0' }}>
               {displayName}
             </div>
-            <div style={{ color:'#a855f7', fontSize:'0.78rem', marginBottom:12 }}>
+            <div style={{ color:'#a855f7', fontSize:'0.78rem', marginBottom:profile?.bio ? 10 : 0 }}>
               {fieldLabel}
             </div>
             {profile?.bio && (
-              <p style={{ color:'#94a3b8', fontSize:'0.78rem', lineHeight:1.5, marginBottom:12 }}>
+              <p style={{ color:'#94a3b8', fontSize:'0.78rem', lineHeight:1.5, margin:'10px 0 0' }}>
                 {profile.bio}
               </p>
             )}
             {profile?.skills?.length > 0 && (
-              <div style={{ display:'flex', gap:5, flexWrap:'wrap', justifyContent:'center' }}>
+              <div style={{ display:'flex', gap:5, flexWrap:'wrap', justifyContent:'center', marginTop:10 }}>
                 {profile.skills.slice(0,4).map(s => (
                   <span key={s} style={{ background:'rgba(168,85,247,0.15)', color:'#a855f7', padding:'2px 8px', borderRadius:10, fontSize:'0.68rem' }}>
                     {s}
@@ -109,38 +117,38 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Stats — plain numbers, no CSS vars */}
+          {/* Stats */}
           <div className="glass" style={{ padding:20, marginBottom:16 }}>
             <div style={{ fontFamily:'Orbitron', fontSize:'0.68rem', color:'#94a3b8', letterSpacing:1, marginBottom:14 }}>
               STATS
             </div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-              <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>Projects Owned</span>
-              <span style={{ fontFamily:'Orbitron', fontWeight:900, color:'#a855f7', fontSize:'1.1rem', lineHeight:1 }}>{ownedCount}</span>
-            </div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-              <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>Total Collabs</span>
-              <span style={{ fontFamily:'Orbitron', fontWeight:900, color:'#a855f7', fontSize:'1.1rem', lineHeight:1 }}>{joinedCount}</span>
-            </div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0' }}>
-              <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>Total Projects</span>
-              <span style={{ fontFamily:'Orbitron', fontWeight:900, color:'#a855f7', fontSize:'1.1rem', lineHeight:1 }}>{ownedCount + joinedCount}</span>
-            </div>
+            {[
+              { label:'Projects Owned', val: ownedCount },
+              { label:'Collaborating',  val: joinedCount },
+              { label:'Total',          val: ownedCount + joinedCount },
+            ].map(s => (
+              <div key={s.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>{s.label}</span>
+                <span style={{ fontFamily:'Orbitron', fontWeight:900, color:'#a855f7', fontSize:'1.05rem', minWidth:24, textAlign:'right' }}>
+                  {s.val}
+                </span>
+              </div>
+            ))}
           </div>
 
-          {/* Action buttons — using window.location to avoid any routing crash */}
+          {/* Buttons — use navigate() NOT window.location so auth is preserved */}
           <button className="btn-primary"
             onClick={() => navigate('/create')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             + New Project
           </button>
           <button className="btn-outline"
-            onClick={() => window.location.href = '/edit-profile'}
+            onClick={() => navigate('/edit-profile')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             Edit Profile
           </button>
           <button
-            onClick={() => { logout(); window.location.href = '/'; }}
+            onClick={() => { logout(); navigate('/'); }}
             style={{ width:'100%', padding:12, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer', fontSize:'0.85rem' }}>
             Logout
           </button>
@@ -159,9 +167,7 @@ export default function Dashboard() {
                 style={{
                   padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer',
                   fontFamily:'Orbitron', fontSize:'0.7rem', letterSpacing:0.5,
-                  background: activeTab === tab.key
-                    ? 'linear-gradient(135deg,#a855f7,#ec4899)'
-                    : 'transparent',
+                  background: activeTab === tab.key ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'transparent',
                   color: activeTab === tab.key ? '#fff' : '#94a3b8',
                   transition:'all 0.2s',
                 }}>
@@ -170,7 +176,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Projects */}
+          {/* Project list */}
           {activeList.length === 0 ? (
             <div style={{ textAlign:'center', padding:60 }}>
               <div style={{ fontSize:'3rem', marginBottom:12 }}>🚀</div>
@@ -197,15 +203,11 @@ export default function Dashboard() {
                       <span style={{ background:'rgba(168,85,247,0.2)', color:'#a855f7', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem', fontFamily:'Orbitron' }}>
                         {p.category}
                       </span>
-                      <span style={{
-                        background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
-                        color: p.status === 'open' ? '#10b981' : '#f59e0b',
-                        padding:'2px 10px', borderRadius:12, fontSize:'0.7rem'
-                      }}>
+                      <span style={{ background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: p.status === 'open' ? '#10b981' : '#f59e0b', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem' }}>
                         {p.status}
                       </span>
                     </div>
-                    <div style={{ fontWeight:700, marginBottom:4, fontFamily:'Orbitron', fontSize:'0.9rem', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    <div style={{ fontWeight:700, fontFamily:'Orbitron', fontSize:'0.9rem', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:4 }}>
                       {p.title}
                     </div>
                     <div style={{ color:'#94a3b8', fontSize:'0.78rem' }}>
