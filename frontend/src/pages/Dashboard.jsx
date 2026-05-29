@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [ownedProjects,  setOwnedProjects]  = useState([]);
   const [joinedProjects, setJoinedProjects] = useState([]);
@@ -14,10 +14,10 @@ export default function Dashboard() {
   const [loading,        setLoading]        = useState(true);
   const [activeTab,      setActiveTab]      = useState('owned');
 
-  // fetchDashboard wrapped in useCallback so it can be called anytime
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
+      // Fetch profile and all projects in parallel
       const [meRes, projectsRes] = await Promise.all([
         api.get('/auth/me'),
         api.get('/projects', { params: { limit: 100 } }),
@@ -25,40 +25,46 @@ export default function Dashboard() {
 
       const me          = meRes.data.user;
       const allProjects = projectsRes.data.projects || [];
-      const userId      = String(me._id);
 
+      // Convert ObjectId to string for reliable comparison
+      const userId = me._id.toString();
       setProfile(me);
 
-      setOwnedProjects(
-        allProjects.filter(p =>
-          String(p.owner?._id || p.owner || '') === userId
-        )
-      );
-      setJoinedProjects(
-        allProjects.filter(p =>
-          Array.isArray(p.collaborators) &&
-          p.collaborators.some(c =>
-            String(c?._id || c || '') === userId
-          )
-        )
-      );
+      // Filter owned projects
+      const owned = allProjects.filter(p => {
+        const ownerId = (p.owner?._id || p.owner || '').toString();
+        return ownerId === userId;
+      });
+
+      // Filter joined projects (collaborator)
+      const joined = allProjects.filter(p => {
+        if (!Array.isArray(p.collaborators)) return false;
+        return p.collaborators.some(c => {
+          const cId = (c?._id || c || '').toString();
+          return cId === userId;
+        });
+      });
+
+      setOwnedProjects(owned);
+      setJoinedProjects(joined);
+
     } catch (err) {
       console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // no deps — function never changes
 
-  // Re-fetch every time this page is navigated to (including returning from create)
+  // Runs on EVERY navigation to /dashboard (location.key changes each time)
   useEffect(() => {
     fetchDashboard();
-  }, [location.key, fetchDashboard]);
+  }, [location.key]); // eslint-disable-line
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (projectId) => {
     if (!window.confirm('Delete this project?')) return;
     try {
-      await api.delete(`/projects/${id}`);
-      fetchDashboard(); // refresh after delete
+      await api.delete(`/projects/${projectId}`);
+      fetchDashboard();
     } catch (err) { console.error(err); }
   };
 
@@ -69,10 +75,9 @@ export default function Dashboard() {
   );
 
   const displayName = profile?.username || user?.username || 'Creator';
-  const rawField    = profile?.field || '';
-  const fieldLabel  = rawField
-    ? rawField.replace('-',' ').replace(/\b\w/g, l => l.toUpperCase())
-    : 'Creator';
+  const fieldLabel  = (profile?.field || '')
+    .replace('-', ' ')
+    .replace(/\b\w/g, l => l.toUpperCase()) || 'Creator';
   const ownedCount  = ownedProjects.length;
   const joinedCount = joinedProjects.length;
   const activeList  = activeTab === 'owned' ? ownedProjects : joinedProjects;
@@ -98,7 +103,7 @@ export default function Dashboard() {
             <div style={{ fontFamily:'Orbitron', fontWeight:700, fontSize:'0.95rem', marginBottom:4, color:'#e2e8f0' }}>
               {displayName}
             </div>
-            <div style={{ color:'#a855f7', fontSize:'0.78rem', marginBottom:profile?.bio ? 10 : 0 }}>
+            <div style={{ color:'#a855f7', fontSize:'0.78rem', marginBottom: profile?.bio ? 10 : 0 }}>
               {fieldLabel}
             </div>
             {profile?.bio && (
@@ -108,7 +113,7 @@ export default function Dashboard() {
             )}
             {profile?.skills?.length > 0 && (
               <div style={{ display:'flex', gap:5, flexWrap:'wrap', justifyContent:'center', marginTop:10 }}>
-                {profile.skills.slice(0,4).map(s => (
+                {profile.skills.slice(0, 4).map(s => (
                   <span key={s} style={{ background:'rgba(168,85,247,0.15)', color:'#a855f7', padding:'2px 8px', borderRadius:10, fontSize:'0.68rem' }}>
                     {s}
                   </span>
@@ -126,17 +131,26 @@ export default function Dashboard() {
               { label:'Projects Owned', val: ownedCount },
               { label:'Collaborating',  val: joinedCount },
               { label:'Total',          val: ownedCount + joinedCount },
-            ].map(s => (
-              <div key={s.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+            ].map((s, i, arr) => (
+              <div key={s.label} style={{
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                padding:'8px 0',
+                borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+              }}>
                 <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>{s.label}</span>
-                <span style={{ fontFamily:'Orbitron', fontWeight:900, color:'#a855f7', fontSize:'1.05rem', minWidth:24, textAlign:'right' }}>
-                  {s.val}
+                {/* Render number as plain text — no CSS vars, no icons */}
+                <span style={{
+                  fontFamily:'monospace', fontWeight:700,
+                  color:'#a855f7', fontSize:'1.1rem',
+                  minWidth:28, textAlign:'right', lineHeight:1,
+                }}>
+                  {typeof s.val === 'number' ? s.val : 0}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Buttons — use navigate() NOT window.location so auth is preserved */}
+          {/* Action buttons */}
           <button className="btn-primary"
             onClick={() => navigate('/create')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
@@ -154,7 +168,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* ── Main ── */}
+        {/* ── Main content ── */}
         <div style={{ flex:1, minWidth:0 }}>
 
           {/* Tabs */}
@@ -167,7 +181,9 @@ export default function Dashboard() {
                 style={{
                   padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer',
                   fontFamily:'Orbitron', fontSize:'0.7rem', letterSpacing:0.5,
-                  background: activeTab === tab.key ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'transparent',
+                  background: activeTab === tab.key
+                    ? 'linear-gradient(135deg,#a855f7,#ec4899)'
+                    : 'transparent',
                   color: activeTab === tab.key ? '#fff' : '#94a3b8',
                   transition:'all 0.2s',
                 }}>
@@ -203,7 +219,11 @@ export default function Dashboard() {
                       <span style={{ background:'rgba(168,85,247,0.2)', color:'#a855f7', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem', fontFamily:'Orbitron' }}>
                         {p.category}
                       </span>
-                      <span style={{ background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: p.status === 'open' ? '#10b981' : '#f59e0b', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem' }}>
+                      <span style={{
+                        background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
+                        color: p.status === 'open' ? '#10b981' : '#f59e0b',
+                        padding:'2px 10px', borderRadius:12, fontSize:'0.7rem',
+                      }}>
                         {p.status}
                       </span>
                     </div>
@@ -221,10 +241,17 @@ export default function Dashboard() {
                       View
                     </button>
                     {activeTab === 'owned' && (
-                      <button onClick={() => handleDelete(p._id)}
-                        style={{ padding:'8px 14px', fontSize:'0.78rem', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer' }}>
-                        Delete
-                      </button>
+                      <>
+                        <button className="btn-outline"
+                          onClick={() => navigate(`/projects/${p._id}/edit`)}
+                          style={{ padding:'8px 14px', fontSize:'0.78rem' }}>
+                          Edit
+                        </button>
+                        <button onClick={() => handleDelete(p._id)}
+                          style={{ padding:'8px 14px', fontSize:'0.78rem', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer' }}>
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
