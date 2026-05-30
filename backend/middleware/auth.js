@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import auth from '../middleware/auth.js';
+import protect from '../middleware/auth.js';  // ← renamed to 'protect' to avoid conflict
 
 const router = express.Router();
 
@@ -90,8 +90,7 @@ router.post('/login', async (req, res) => {
 });
 
 // ── GET /api/auth/me ──────────────────────────────────────────────────────────
-// Simple user fetch — NO populate (avoids 500 on empty arrays)
-router.get('/me', auth, async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
