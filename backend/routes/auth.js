@@ -1,29 +1,24 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import auth from '../middleware/auth.js';
+import protect from '../middleware/protect.js';
 
 const router = express.Router();
 
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-// ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, field, skills, bio } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email and password are required' });
     }
-
-    // Check for existing user
     const existing = await User.findOne({ $or: [{ email }, { username }] });
     if (existing) {
-      const field = existing.email === email ? 'Email' : 'Username';
-      return res.status(409).json({ error: `${field} is already taken` });
+      const f = existing.email === email ? 'Email' : 'Username';
+      return res.status(409).json({ error: `${f} is already taken` });
     }
-
     const user = await User.create({
       username: username.trim(),
       email: email.toLowerCase().trim(),
@@ -32,9 +27,7 @@ router.post('/register', async (req, res) => {
       skills: skills || [],
       bio: bio || '',
     });
-
     const token = generateToken(user._id);
-
     res.status(201).json({
       message: 'Account created successfully',
       token,
@@ -46,6 +39,8 @@ router.post('/register', async (req, res) => {
         skills: user.skills,
         bio: user.bio,
         avatar: user.avatar,
+        github: user.github,
+        portfolio: user.portfolio,
         createdAt: user.createdAt,
       },
     });
@@ -59,28 +54,17 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ── POST /api/auth/login ──────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
-    // Select password explicitly (it's hidden by default)
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
+    if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
     const token = generateToken(user._id);
-
     res.json({
       message: 'Login successful',
       token,
@@ -92,6 +76,8 @@ router.post('/login', async (req, res) => {
         skills: user.skills,
         bio: user.bio,
         avatar: user.avatar,
+        github: user.github,
+        portfolio: user.portfolio,
         createdAt: user.createdAt,
       },
     });
@@ -101,16 +87,13 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── GET /api/auth/me (verify token + return current user) ─────────────────────
-router.get('/me', auth, async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.userId)
-      .populate('projectsOwned', 'title status category createdAt')
-      .populate('projectsJoined', 'title status category createdAt');
-
+    const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   } catch (err) {
+    console.error('GET /me error:', err);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });

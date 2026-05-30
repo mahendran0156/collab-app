@@ -1,7 +1,7 @@
 import express from 'express';
 import Message from '../models/Message.js';
 import Project from '../models/Project.js';
-import auth from '../middleware/auth.js';
+import auth from '../middleware/protect.js';
 
 const router = express.Router();
 
