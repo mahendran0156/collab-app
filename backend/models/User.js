@@ -1,7 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import Project from '../models/Project.js';
-import auth from '../middleware/auth.js';
+import protect from '../middleware/protect.js';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
 });
 
 // ── GET /api/users/profile — get own profile (NO populate) ────────────────────
-router.get('/profile', auth, async (req, res) => {
+router.get('/profile', protect, async (req, res) => {
   try {
     // Simple select — no populate to avoid crashes on empty arrays
     const user = await User.findById(req.userId).select('-password');
@@ -44,7 +44,7 @@ router.get('/profile', auth, async (req, res) => {
 });
 
 // ── PUT /api/users/profile — update own profile ───────────────────────────────
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', protect, async (req, res) => {
   try {
     const allowed = ['username', 'bio', 'field', 'skills', 'avatar', 'portfolio', 'github', 'website'];
     const updates = {};
