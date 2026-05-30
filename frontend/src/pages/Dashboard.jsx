@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -14,30 +14,32 @@ export default function Dashboard() {
   const [loading,        setLoading]        = useState(true);
   const [activeTab,      setActiveTab]      = useState('owned');
 
-  const fetchDashboard = useCallback(async () => {
+  useEffect(() => {
+    if (user?._id) fetchDashboard();
+  }, [location.key, user?._id]); // eslint-disable-line
+
+  async function fetchDashboard() {
     setLoading(true);
     try {
-      // Use user._id from AuthContext directly — it's always available here
-      // since Dashboard is a ProtectedRoute (user is guaranteed non-null)
-      const userId = user?._id?.toString();
-      if (!userId) return;
+      const userId = user._id.toString();
 
-      // Fetch all projects — filter client side by userId
-      const projectsRes = await api.get('/projects', { params: { limit: 100 } });
-      const allProjects = projectsRes.data.projects || [];
+      // Run both fetches in parallel
+      const [profileRes, projectsRes] = await Promise.all([
+        api.get('/users/profile'),
+        api.get('/projects', { params: { limit: 100 } }),
+      ]);
 
-      // Also fetch fresh profile for sidebar display
-      const profileRes = await api.get('/users/profile');
       setProfile(profileRes.data.user);
 
-      // Filter owned — owner._id matches current user
-      const owned = allProjects.filter(p => {
-        const ownerId = (p.owner?._id || p.owner || '').toString();
-        return ownerId === userId;
-      });
+      const all = projectsRes.data.projects || [];
 
-      // Filter joined — user in collaborators array
-      const joined = allProjects.filter(p =>
+      // owned: project.owner._id === userId
+      const owned = all.filter(p =>
+        (p.owner?._id || p.owner || '').toString() === userId
+      );
+
+      // joined: userId in collaborators array
+      const joined = all.filter(p =>
         Array.isArray(p.collaborators) &&
         p.collaborators.some(c => (c?._id || c || '').toString() === userId)
       );
@@ -46,21 +48,16 @@ export default function Dashboard() {
       setJoinedProjects(joined);
 
     } catch (err) {
-      console.error('Dashboard fetch error:', err.message);
+      console.error('Dashboard error:', err.message);
     } finally {
       setLoading(false);
     }
-  }, [user?._id]); // re-run if user changes
+  }
 
-  // Refresh on every navigation to this page
-  useEffect(() => {
-    if (user?._id) fetchDashboard();
-  }, [location.key, user?._id]); // eslint-disable-line
-
-  const handleDelete = async (projectId) => {
+  const handleDelete = async (pid) => {
     if (!window.confirm('Delete this project?')) return;
     try {
-      await api.delete(`/projects/${projectId}`);
+      await api.delete(`/projects/${pid}`);
       fetchDashboard();
     } catch (err) { console.error(err); }
   };
@@ -71,33 +68,15 @@ export default function Dashboard() {
     </div>
   );
 
-  // Use freshly fetched profile, fall back to auth context user
   const displayName = profile?.username || user?.username || 'Creator';
-  const rawField    = profile?.field || user?.field || '';
-  const fieldLabel  = rawField
-    ? rawField.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())
-    : 'Creator';
+  const fieldLabel  = (profile?.field || user?.field || '')
+    .replace('-',' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Creator';
   const ownedCount  = ownedProjects.length;
   const joinedCount = joinedProjects.length;
   const activeList  = activeTab === 'owned' ? ownedProjects : joinedProjects;
 
-  // Stat number style — plain span, no fancy font that renders as circles
-  const statNum = (n) => (
-    <span style={{
-      display:'inline-block',
-      minWidth:28, textAlign:'center',
-      background:'linear-gradient(135deg,#a855f7,#ec4899)',
-      color:'#fff', borderRadius:6,
-      fontWeight:700, fontSize:'0.85rem',
-      padding:'2px 6px', lineHeight:'1.4',
-      fontFamily:'Arial, sans-serif',
-    }}>
-      {n}
-    </span>
-  );
-
   return (
-    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto', boxSizing:'border-box' }}>
+    <div style={{ paddingTop:90, paddingBottom:40, paddingLeft:32, paddingRight:32, maxWidth:1200, margin:'0 auto' }}>
       <div style={{ display:'flex', gap:28, flexWrap:'wrap', alignItems:'flex-start' }}>
 
         {/* ── Sidebar ── */}
@@ -120,13 +99,11 @@ export default function Dashboard() {
             <div style={{ color:'#a855f7', fontSize:'0.78rem', marginBottom: profile?.bio ? 10 : 0 }}>
               {fieldLabel}
             </div>
-            {/* Bio — shows after editing profile */}
             {profile?.bio && (
-              <p style={{ color:'#94a3b8', fontSize:'0.78rem', lineHeight:1.5, margin:'10px 0 0', textAlign:'left' }}>
+              <p style={{ color:'#94a3b8', fontSize:'0.78rem', lineHeight:1.6, margin:'10px 0 0', textAlign:'left' }}>
                 {profile.bio}
               </p>
             )}
-            {/* Skills — shows after editing profile */}
             {profile?.skills?.length > 0 && (
               <div style={{ display:'flex', gap:5, flexWrap:'wrap', justifyContent:'center', marginTop:10 }}>
                 {profile.skills.slice(0, 5).map(s => (
@@ -136,7 +113,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-            {/* GitHub link */}
             {profile?.github && (
               <a href={profile.github} target="_blank" rel="noreferrer"
                 style={{ display:'block', marginTop:10, color:'#a855f7', fontSize:'0.75rem', textDecoration:'none' }}>
@@ -151,7 +127,7 @@ export default function Dashboard() {
               STATS
             </div>
             {[
-              { label:'Projects Owned', val: ownedCount  },
+              { label:'Projects Owned', val: ownedCount },
               { label:'Collaborating',  val: joinedCount },
               { label:'Total',          val: ownedCount + joinedCount },
             ].map((s, i, arr) => (
@@ -161,24 +137,29 @@ export default function Dashboard() {
                 borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
               }}>
                 <span style={{ color:'#94a3b8', fontSize:'0.82rem' }}>{s.label}</span>
-                {statNum(s.val)}
+                <span style={{
+                  background:'linear-gradient(135deg,#a855f7,#ec4899)',
+                  color:'#fff', borderRadius:6, fontWeight:700,
+                  fontSize:'0.85rem', padding:'2px 10px',
+                  fontFamily:'Arial, Helvetica, sans-serif',
+                  minWidth:28, textAlign:'center', display:'inline-block',
+                }}>
+                  {s.val}
+                </span>
               </div>
             ))}
           </div>
 
           {/* Buttons */}
-          <button className="btn-primary"
-            onClick={() => navigate('/create')}
+          <button className="btn-primary" onClick={() => navigate('/create')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             + New Project
           </button>
-          <button className="btn-outline"
-            onClick={() => navigate('/edit-profile')}
+          <button className="btn-outline" onClick={() => navigate('/edit-profile')}
             style={{ width:'100%', padding:12, marginBottom:8, fontSize:'0.85rem' }}>
             Edit Profile
           </button>
-          <button
-            onClick={() => { logout(); navigate('/'); }}
+          <button onClick={() => { logout(); navigate('/'); }}
             style={{ width:'100%', padding:12, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer', fontSize:'0.85rem' }}>
             Logout
           </button>
@@ -186,20 +167,17 @@ export default function Dashboard() {
 
         {/* ── Main content ── */}
         <div style={{ flex:1, minWidth:0 }}>
-
           {/* Tabs */}
           <div style={{ display:'flex', gap:4, marginBottom:20, background:'rgba(255,255,255,0.03)', borderRadius:10, padding:4, width:'fit-content' }}>
             {[
-              { key:'owned',  label:`My Projects (${ownedCount})`  },
+              { key:'owned',  label:`My Projects (${ownedCount})` },
               { key:'joined', label:`Collaborating (${joinedCount})` },
             ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 style={{
                   padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer',
                   fontFamily:'Orbitron', fontSize:'0.7rem', letterSpacing:0.5,
-                  background: activeTab === tab.key
-                    ? 'linear-gradient(135deg,#a855f7,#ec4899)'
-                    : 'transparent',
+                  background: activeTab === tab.key ? 'linear-gradient(135deg,#a855f7,#ec4899)' : 'transparent',
                   color: activeTab === tab.key ? '#fff' : '#94a3b8',
                   transition:'all 0.2s',
                 }}>
@@ -235,11 +213,7 @@ export default function Dashboard() {
                       <span style={{ background:'rgba(168,85,247,0.2)', color:'#a855f7', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem', fontFamily:'Orbitron' }}>
                         {p.category}
                       </span>
-                      <span style={{
-                        background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
-                        color: p.status === 'open' ? '#10b981' : '#f59e0b',
-                        padding:'2px 10px', borderRadius:12, fontSize:'0.7rem',
-                      }}>
+                      <span style={{ background: p.status === 'open' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: p.status === 'open' ? '#10b981' : '#f59e0b', padding:'2px 10px', borderRadius:12, fontSize:'0.7rem' }}>
                         {p.status}
                       </span>
                     </div>
@@ -247,29 +221,20 @@ export default function Dashboard() {
                       {p.title}
                     </div>
                     <div style={{ color:'#94a3b8', fontSize:'0.78rem' }}>
-                      👥 {p.collaborators?.length || 0} collaborators &nbsp;·&nbsp;
-                      ❤️ {p.likes?.length || 0} likes
+                      👥 {p.collaborators?.length || 0} collaborators &nbsp;·&nbsp; ❤️ {p.likes?.length || 0} likes
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:8, flexShrink:0 }}>
-                    <button className="btn-outline"
-                      onClick={() => navigate(`/projects/${p._id}`)}
-                      style={{ padding:'8px 14px', fontSize:'0.78rem' }}>
-                      View
-                    </button>
-                    {activeTab === 'owned' && (
-                      <>
-                        <button className="btn-outline"
-                          onClick={() => navigate(`/projects/${p._id}/edit`)}
-                          style={{ padding:'8px 14px', fontSize:'0.78rem' }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDelete(p._id)}
-                          style={{ padding:'8px 14px', fontSize:'0.78rem', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer' }}>
-                          Delete
-                        </button>
-                      </>
-                    )}
+                    <button className="btn-outline" onClick={() => navigate(`/projects/${p._id}`)}
+                      style={{ padding:'8px 14px', fontSize:'0.78rem' }}>View</button>
+                    {activeTab === 'owned' && (<>
+                      <button className="btn-outline" onClick={() => navigate(`/projects/${p._id}/edit`)}
+                        style={{ padding:'8px 14px', fontSize:'0.78rem' }}>Edit</button>
+                      <button onClick={() => handleDelete(p._id)}
+                        style={{ padding:'8px 14px', fontSize:'0.78rem', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:8, color:'#f87171', cursor:'pointer' }}>
+                        Delete
+                      </button>
+                    </>)}
                   </div>
                 </div>
               ))}
