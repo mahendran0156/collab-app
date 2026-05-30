@@ -5,7 +5,7 @@ import protect from '../middleware/protect.js';
 
 const router = express.Router();
 
-// ── GET /api/projects ─────────────────────────────────────────────────────────
+// GET /api/projects
 router.get('/', async (req, res) => {
   try {
     const { category, status, search, page = 1, limit = 12, sortBy = 'createdAt' } = req.query;
@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ── GET /api/projects/:id ─────────────────────────────────────────────────────
+// GET /api/projects/:id
 router.get('/:id', async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
@@ -48,7 +48,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ── POST /api/projects ────────────────────────────────────────────────────────
+// POST /api/projects
 router.post('/', protect, async (req, res) => {
   try {
     const { title, description, category, rolesNeeded, tags, maxCollaborators, imageUrl, githubLink, liveLink, status } = req.body;
@@ -76,14 +76,16 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// ── PUT /api/projects/:id ─────────────────────────────────────────────────────
+// PUT /api/projects/:id
 router.put('/:id', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    if (project.owner.toString() !== req.userId) return res.status(403).json({ error: 'Only the owner can edit this' });
-    const allowed = ['title','description','category','status','rolesNeeded','tags','maxCollaborators','imageUrl','githubLink','liveLink'];
-    allowed.forEach((f) => { if (req.body[f] !== undefined) project[f] = req.body[f]; });
+    if (project.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Only the project owner can edit this' });
+    }
+    const allowed = ['title', 'description', 'category', 'status', 'rolesNeeded', 'tags', 'maxCollaborators', 'imageUrl', 'githubLink', 'liveLink'];
+    allowed.forEach((field) => { if (req.body[field] !== undefined) project[field] = req.body[field]; });
     await project.save();
     const updated = await project.populate('owner', 'username field avatar');
     res.json({ message: 'Project updated', project: updated });
@@ -92,12 +94,14 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-// ── DELETE /api/projects/:id ──────────────────────────────────────────────────
+// DELETE /api/projects/:id
 router.delete('/:id', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    if (project.owner.toString() !== req.userId) return res.status(403).json({ error: 'Only the owner can delete this' });
+    if (project.owner.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Only the project owner can delete this' });
+    }
     await project.deleteOne();
     await User.findByIdAndUpdate(req.userId, { $pull: { projectsOwned: project._id } });
     res.json({ message: 'Project deleted' });
@@ -106,7 +110,7 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
-// ── POST /api/projects/:id/join ───────────────────────────────────────────────
+// POST /api/projects/:id/join
 router.post('/:id/join', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
@@ -129,12 +133,12 @@ router.post('/:id/join', protect, async (req, res) => {
   }
 });
 
-// ── POST /api/projects/:id/leave ──────────────────────────────────────────────
+// POST /api/projects/:id/leave
 router.post('/:id/leave', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    project.collaborators = project.collaborators.filter(c => c.toString() !== req.userId);
+    project.collaborators = project.collaborators.filter((c) => c.toString() !== req.userId);
     if (project.collaborators.length === 0 && project.status === 'in-progress') project.status = 'open';
     await project.save();
     await User.findByIdAndUpdate(req.userId, { $pull: { projectsJoined: project._id } });
@@ -144,14 +148,17 @@ router.post('/:id/leave', protect, async (req, res) => {
   }
 });
 
-// ── POST /api/projects/:id/like ───────────────────────────────────────────────
+// POST /api/projects/:id/like
 router.post('/:id/like', protect, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     const liked = project.likes.map(String).includes(req.userId);
-    if (liked) project.likes = project.likes.filter(l => l.toString() !== req.userId);
-    else project.likes.push(req.userId);
+    if (liked) {
+      project.likes = project.likes.filter((l) => l.toString() !== req.userId);
+    } else {
+      project.likes.push(req.userId);
+    }
     await project.save();
     res.json({ liked: !liked, likeCount: project.likes.length });
   } catch (err) {
@@ -159,7 +166,7 @@ router.post('/:id/like', protect, async (req, res) => {
   }
 });
 
-// ── POST /api/projects/:id/review ─────────────────────────────────────────────
+// POST /api/projects/:id/review
 router.post('/:id/review', protect, async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -167,7 +174,7 @@ router.post('/:id/review', protect, async (req, res) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (project.owner.toString() === req.userId) return res.status(400).json({ error: 'Cannot review own project' });
-    const existingIndex = project.reviews.findIndex(r => r.user.toString() === req.userId);
+    const existingIndex = project.reviews.findIndex((r) => r.user.toString() === req.userId);
     if (existingIndex > -1) {
       project.reviews[existingIndex].rating = rating;
       project.reviews[existingIndex].comment = comment || '';

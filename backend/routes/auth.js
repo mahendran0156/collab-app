@@ -8,7 +8,6 @@ const router = express.Router();
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-// ── POST /api/auth/register ───────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, field, skills, bio } = req.body;
@@ -30,39 +29,64 @@ router.post('/register', async (req, res) => {
     });
     const token = generateToken(user._id);
     res.status(201).json({
-      message: 'Account created successfully', token,
-      user: { _id: user._id, username: user.username, email: user.email, field: user.field, skills: user.skills, bio: user.bio, avatar: user.avatar, github: user.github, portfolio: user.portfolio, createdAt: user.createdAt },
+      message: 'Account created successfully',
+      token,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        field: user.field,
+        skills: user.skills,
+        bio: user.bio,
+        avatar: user.avatar,
+        github: user.github,
+        portfolio: user.portfolio,
+        createdAt: user.createdAt,
+      },
     });
   } catch (err) {
     if (err.name === 'ValidationError') {
-      return res.status(400).json({ error: Object.values(err.errors).map(e => e.message).join(', ') });
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({ error: messages.join(', ') });
     }
     console.error('Register error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
-// ── POST /api/auth/login ──────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
     const token = generateToken(user._id);
     res.json({
-      message: 'Login successful', token,
-      user: { _id: user._id, username: user.username, email: user.email, field: user.field, skills: user.skills, bio: user.bio, avatar: user.avatar, github: user.github, portfolio: user.portfolio, createdAt: user.createdAt },
+      message: 'Login successful',
+      token,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        field: user.field,
+        skills: user.skills,
+        bio: user.bio,
+        avatar: user.avatar,
+        github: user.github,
+        portfolio: user.portfolio,
+        createdAt: user.createdAt,
+      },
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
 
-// ── GET /api/auth/me ──────────────────────────────────────────────────────────
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
