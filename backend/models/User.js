@@ -1,87 +1,64 @@
-import express from 'express';
-import User from '../models/User.js';
-import Project from '../models/Project.js';
-import protect from '../middleware/protect.js';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
-const router = express.Router();
-
-// ── GET /api/users — explore all creators ─────────────────────────────────────
-router.get('/', async (req, res) => {
-  try {
-    const { field, search, page = 1, limit = 20 } = req.query;
-    const filter = {};
-    if (field && field !== 'all') filter.field = field;
-    if (search) {
-      filter.$or = [
-        { username: { $regex: search, $options: 'i' } },
-        { bio:      { $regex: search, $options: 'i' } },
-        { skills:   { $regex: search, $options: 'i' } },
-      ];
-    }
-    const skip = (Number(page) - 1) * Number(limit);
-    const [users, total] = await Promise.all([
-      User.find(filter).select('-password').sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
-      User.countDocuments(filter),
-    ]);
-    res.json({ users, pagination: { total, page: Number(page), pages: Math.ceil(total / Number(limit)) } });
-  } catch (err) {
-    console.error('GET /users error:', err);
-    res.status(500).json({ error: 'Failed to fetch creators' });
-  }
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters'],
+    maxlength: [30, 'Username must be at most 30 characters'],
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters'],
+    select: false,
+  },
+  field: {
+    type: String,
+    enum: ['developer', 'designer', 'musician', 'social-media', 'other'],
+    default: 'other',
+  },
+  skills:       [{ type: String, trim: true }],
+  bio:          { type: String, maxlength: 500, default: '' },
+  avatar:       { type: String, default: '' },
+  portfolio:    { type: String, default: '' },
+  github:       { type: String, default: '' },
+  website:      { type: String, default: '' },
+  projectsOwned:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  projectsJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+}, {
+  timestamps: true,
 });
 
-// ── GET /api/users/profile — get own profile (NO populate) ────────────────────
-router.get('/profile', protect, async (req, res) => {
-  try {
-    // Simple select — no populate to avoid crashes on empty arrays
-    const user = await User.findById(req.userId).select('-password');
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user });
-  } catch (err) {
-    console.error('GET /users/profile error:', err);
-    res.status(500).json({ error: 'Failed to fetch profile' });
-  }
+// Hash password before saving
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-// ── PUT /api/users/profile — update own profile ───────────────────────────────
-router.put('/profile', protect, async (req, res) => {
-  try {
-    const allowed = ['username', 'bio', 'field', 'skills', 'avatar', 'portfolio', 'github', 'website'];
-    const updates = {};
-    allowed.forEach((key) => {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
-    });
-    if (updates.username) {
-      const taken = await User.findOne({ username: updates.username, _id: { $ne: req.userId } });
-      if (taken) return res.status(409).json({ error: 'Username is already taken' });
-    }
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'Profile updated', user });
-  } catch (err) {
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map((e) => e.message);
-      return res.status(400).json({ error: messages.join(', ') });
-    }
-    console.error('PUT /users/profile error:', err);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
-});
+// Compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
-// ── GET /api/users/:id — public user profile ──────────────────────────────────
-router.get('/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user, stats: { totalProjects: 0, totalCollaborations: 0 } });
-  } catch (err) {
-    console.error('GET /users/:id error:', err);
-    res.status(500).json({ error: 'Failed to fetch user' });
-  }
-});
+// Remove password from JSON output
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
 
-export default router;
+export default mongoose.model('User', userSchema);
