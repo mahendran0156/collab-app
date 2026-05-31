@@ -1,7 +1,6 @@
 import express from 'express';
 import Project from '../models/Project.js';
 import User from '../models/User.js';
-import auth from '../middleware/protect.js';
 import { io } from '../server.js';
 
 const router = express.Router();
