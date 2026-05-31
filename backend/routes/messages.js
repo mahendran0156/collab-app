@@ -1,12 +1,12 @@
 import express from 'express';
 import Message from '../models/Message.js';
 import Project from '../models/Project.js';
-import protect from '../middleware/protect.js';
+import { requireAuth } from './auth.js';
 
 const router = express.Router();
 
 // GET /api/messages/:projectId
-router.get('/:projectId', protect, async (req, res) => {
+router.get('/:projectId', requireAuth, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { page = 1, limit = 50 } = req.query;
@@ -27,7 +27,7 @@ router.get('/:projectId', protect, async (req, res) => {
 });
 
 // POST /api/messages/:projectId
-router.post('/:projectId', protect, async (req, res) => {
+router.post('/:projectId', requireAuth, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { content } = req.body;
@@ -46,7 +46,7 @@ router.post('/:projectId', protect, async (req, res) => {
 });
 
 // DELETE /api/messages/:id
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id);
     if (!message) return res.status(404).json({ error: 'Message not found' });

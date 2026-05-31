@@ -1,10 +1,10 @@
 import express from 'express';
 import User from '../models/User.js';
-import protect from '../middleware/protect.js';
+import { requireAuth } from './auth.js';
 
 const router = express.Router();
 
-// GET /api/users — explore all creators
+// GET /api/users
 router.get('/', async (req, res) => {
   try {
     const { field, search, page = 1, limit = 20 } = req.query;
@@ -29,8 +29,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/users/profile — own profile
-router.get('/profile', protect, async (req, res) => {
+// GET /api/users/profile
+router.get('/profile', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -41,8 +41,8 @@ router.get('/profile', protect, async (req, res) => {
   }
 });
 
-// PUT /api/users/profile — update own profile
-router.put('/profile', protect, async (req, res) => {
+// PUT /api/users/profile
+router.put('/profile', requireAuth, async (req, res) => {
   try {
     const allowed = ['username', 'bio', 'field', 'skills', 'avatar', 'portfolio', 'github', 'website'];
     const updates = {};
@@ -54,9 +54,7 @@ router.put('/profile', protect, async (req, res) => {
       if (taken) return res.status(409).json({ error: 'Username is already taken' });
     }
     const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: updates },
-      { new: true, runValidators: true }
+      req.userId, { $set: updates }, { new: true, runValidators: true }
     ).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'Profile updated', user });
@@ -70,7 +68,7 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
-// GET /api/users/:id — public profile
+// GET /api/users/:id
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');

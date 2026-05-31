@@ -1,7 +1,7 @@
 import express from 'express';
 import Project from '../models/Project.js';
 import User from '../models/User.js';
-import protect from '../middleware/protect.js';
+import { requireAuth } from './auth.js';
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/projects
-router.post('/', protect, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { title, description, category, rolesNeeded, tags, maxCollaborators, imageUrl, githubLink, liveLink, status } = req.body;
     if (!title || !description || !category) {
@@ -77,7 +77,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // PUT /api/projects/:id
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -95,7 +95,7 @@ router.put('/:id', protect, async (req, res) => {
 });
 
 // DELETE /api/projects/:id
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -111,7 +111,7 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 // POST /api/projects/:id/join
-router.post('/:id/join', protect, async (req, res) => {
+router.post('/:id/join', requireAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -134,7 +134,7 @@ router.post('/:id/join', protect, async (req, res) => {
 });
 
 // POST /api/projects/:id/leave
-router.post('/:id/leave', protect, async (req, res) => {
+router.post('/:id/leave', requireAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -149,16 +149,14 @@ router.post('/:id/leave', protect, async (req, res) => {
 });
 
 // POST /api/projects/:id/like
-router.post('/:id/like', protect, async (req, res) => {
+router.post('/:id/like', requireAuth, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     const liked = project.likes.map(String).includes(req.userId);
-    if (liked) {
-      project.likes = project.likes.filter((l) => l.toString() !== req.userId);
-    } else {
-      project.likes.push(req.userId);
-    }
+    liked
+      ? (project.likes = project.likes.filter((l) => l.toString() !== req.userId))
+      : project.likes.push(req.userId);
     await project.save();
     res.json({ liked: !liked, likeCount: project.likes.length });
   } catch (err) {
@@ -167,7 +165,7 @@ router.post('/:id/like', protect, async (req, res) => {
 });
 
 // POST /api/projects/:id/review
-router.post('/:id/review', protect, async (req, res) => {
+router.post('/:id/review', requireAuth, async (req, res) => {
   try {
     const { rating, comment } = req.body;
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });

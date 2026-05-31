@@ -1,13 +1,33 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import protect from '../middleware/protect.js';
 
 const router = express.Router();
+
+// ── JWT middleware (defined inline to avoid import naming conflict) ────────────
+const requireAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    req.user = decoded;
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired. Please log in again.' });
+    }
+    return res.status(401).json({ error: 'Invalid token.' });
+  }
+};
 
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
+// POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, field, skills, bio } = req.body;
@@ -32,15 +52,9 @@ router.post('/register', async (req, res) => {
       message: 'Account created successfully',
       token,
       user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        field: user.field,
-        skills: user.skills,
-        bio: user.bio,
-        avatar: user.avatar,
-        github: user.github,
-        portfolio: user.portfolio,
+        _id: user._id, username: user.username, email: user.email,
+        field: user.field, skills: user.skills, bio: user.bio,
+        avatar: user.avatar, github: user.github, portfolio: user.portfolio,
         createdAt: user.createdAt,
       },
     });
@@ -54,6 +68,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -69,15 +84,9 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        field: user.field,
-        skills: user.skills,
-        bio: user.bio,
-        avatar: user.avatar,
-        github: user.github,
-        portfolio: user.portfolio,
+        _id: user._id, username: user.username, email: user.email,
+        field: user.field, skills: user.skills, bio: user.bio,
+        avatar: user.avatar, github: user.github, portfolio: user.portfolio,
         createdAt: user.createdAt,
       },
     });
@@ -87,7 +96,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/me', protect, async (req, res) => {
+// GET /api/auth/me
+router.get('/me', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -98,4 +108,6 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
+// Export requireAuth for use in other route files
+export { requireAuth };
 export default router;
