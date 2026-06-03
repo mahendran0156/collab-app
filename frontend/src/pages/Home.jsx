@@ -11,6 +11,7 @@ const categories = [
 
 const stats = [
   { value:'1+', label:'Creators'    },
+  
   { value:'3+',   label:'Projects'    },
   
   { value:'2+',   label:'Collabs'     },
