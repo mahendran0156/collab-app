@@ -1,416 +1,194 @@
-/* ================================================================
-   COLLAB — global.css
-   Stack: React 18 · Three.js · Socket.IO · MERN · Dark Theme
-   Fonts: Orbitron (headings/brand) · Rajdhani (body/UI)
-   Replace your existing frontend/src/styles/global.css with this.
-   ================================================================ */
+/* ============================================================
+   COLLAB — Cross-Platform UI/UX Fix
+   Drop this file into: frontend/src/styles/cross-platform.css
+   Then import in index.js / App.js:
+     import './styles/cross-platform.css';
+   ============================================================ */
 
-
-/* ── 1. GOOGLE FONTS ──────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-
-
-/* ── 2. DESIGN TOKENS ─────────────────────────────────────────── */
-:root {
-  /* Colors */
-  --clr-bg:           #0a0a1a;
-  --clr-surface:      #111127;
-  --clr-card:         #16162a;
-  --clr-card-hover:   #1c1c34;
-  --clr-border:       rgba(255, 255, 255, 0.07);
-  --clr-border-hover: rgba(168, 85, 247, 0.35);
-
-  --clr-primary:      #a855f7;   /* purple */
-  --clr-primary-dim:  rgba(168, 85, 247, 0.15);
-  --clr-accent:       #6366f1;   /* indigo */
-  --clr-accent-dim:   rgba(99, 102, 241, 0.15);
-  --clr-success:      #10b981;
-  --clr-danger:       #ef4444;
-  --clr-warning:      #f59e0b;
-
-  --clr-text:         #e2e8f0;
-  --clr-text-muted:   #94a3b8;
-  --clr-text-faint:   #475569;
-
-  /* Typography */
-  --font-brand:  'Orbitron', 'Courier New', monospace;
-  --font-body:   'Rajdhani', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-
-  --fs-xs:   clamp(0.688rem, 1.2vw, 0.75rem);    /* 11–12px */
-  --fs-sm:   clamp(0.813rem, 1.5vw, 0.875rem);   /* 13–14px */
-  --fs-base: clamp(0.938rem, 1.8vw, 1rem);        /* 15–16px */
-  --fs-md:   clamp(1rem,     2vw,   1.125rem);    /* 16–18px */
-  --fs-lg:   clamp(1.125rem, 2.5vw, 1.25rem);    /* 18–20px */
-  --fs-xl:   clamp(1.25rem,  3vw,   1.5rem);      /* 20–24px */
-  --fs-2xl:  clamp(1.5rem,   4vw,   2rem);        /* 24–32px */
-  --fs-3xl:  clamp(1.875rem, 5vw,   2.5rem);      /* 30–40px */
-  --fs-4xl:  clamp(2.25rem,  6vw,   3.5rem);      /* 36–56px */
-
-  /* Spacing */
-  --sp-1:  0.25rem;
-  --sp-2:  0.5rem;
-  --sp-3:  0.75rem;
-  --sp-4:  1rem;
-  --sp-5:  1.25rem;
-  --sp-6:  1.5rem;
-  --sp-8:  2rem;
-  --sp-10: 2.5rem;
-  --sp-12: 3rem;
-  --sp-16: 4rem;
-
-  /* Layout */
-  --nav-h:         64px;
-  --sidebar-w:     280px;
-  --content-max:   1280px;
-  --card-radius:   12px;
-  --btn-radius:    8px;
-  --input-radius:  8px;
-
-  /* Transitions */
-  --ease:     cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-fast: 150ms;
-  --dur-base: 250ms;
-  --dur-slow: 400ms;
-}
-
-
-/* ── 3. RESET ─────────────────────────────────────────────────── */
+/* ── 1. RESET & BOX MODEL ───────────────────────────────── */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  /* Remove blue flash on mobile tap */
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; /* removes blue flash on mobile tap */
 }
 
 html {
-  /* Prevent iOS landscape font size inflation */
+  /* Prevent font size inflation on iOS landscape */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Smooth scrolling — respects prefers-reduced-motion below */
   scroll-behavior: smooth;
-  height: 100%;
 }
 
 body {
-  min-height: 100%;
-  background-color: var(--clr-bg);
-  color: var(--clr-text);
-  font-family: var(--font-body);
-  font-size: var(--fs-base);
-  font-weight: 400;
-  line-height: 1.6;
-
-  /* Crisp font rendering */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-
-  /* Prevent horizontal scroll on all platforms */
-  overflow-x: hidden;
-
-  /* iPhone safe areas (notch, home bar) */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;          /* prevent horizontal scroll on all platforms */
+  -webkit-font-smoothing: antialiased;   /* crisp fonts on macOS/iOS */
+  -moz-osx-font-smoothing: grayscale;   /* crisp fonts on Firefox/macOS */
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  /* Side safe areas on landscape iPhone */
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+/* ── 2. TYPOGRAPHY — CROSS-PLATFORM FONTS ───────────────── */
+/* Orbitron & Rajdhani (already in your global.css) — fallbacks added */
+body, button, input, textarea, select {
+  font-family: 'Rajdhani', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
-
-/* ── 4. TYPOGRAPHY ────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-brand);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: var(--clr-text);
+h1, h2, h3, .brand-font {
+  font-family: 'Orbitron', 'Courier New', monospace;
 }
 
-h1 { font-size: var(--fs-4xl); }
-h2 { font-size: var(--fs-3xl); }
-h3 { font-size: var(--fs-2xl); }
-h4 { font-size: var(--fs-xl); }
-h5 { font-size: var(--fs-lg); }
-h6 { font-size: var(--fs-md); }
+/* ── 3. FLUID TYPOGRAPHY ─────────────────────────────────── */
+:root {
+  /* clamp(min, preferred, max) — scales between breakpoints */
+  --fs-xs:    clamp(0.70rem, 1.5vw, 0.80rem);
+  --fs-sm:    clamp(0.80rem, 1.8vw, 0.90rem);
+  --fs-base:  clamp(0.90rem, 2.0vw, 1.00rem);
+  --fs-md:    clamp(1.00rem, 2.2vw, 1.10rem);
+  --fs-lg:    clamp(1.10rem, 2.5vw, 1.25rem);
+  --fs-xl:    clamp(1.25rem, 3.5vw, 1.75rem);
+  --fs-2xl:   clamp(1.50rem, 4.5vw, 2.25rem);
+  --fs-3xl:   clamp(1.80rem, 6vw,   3.00rem);
 
-p {
-  font-size: var(--fs-base);
-  line-height: 1.75;
-  color: var(--clr-text-muted);
+  /* Spacing scale */
+  --sp-xs:    clamp(0.25rem, 1vw, 0.50rem);
+  --sp-sm:    clamp(0.50rem, 2vw, 0.75rem);
+  --sp-md:    clamp(0.75rem, 3vw, 1.00rem);
+  --sp-lg:    clamp(1.00rem, 4vw, 1.50rem);
+  --sp-xl:    clamp(1.50rem, 5vw, 2.00rem);
+  --sp-2xl:   clamp(2.00rem, 7vw, 3.00rem);
+
+  /* Colors — already using these in your app */
+  --color-bg:        #0a0a1a;
+  --color-surface:   #111127;
+  --color-card:      #1a1a30;
+  --color-border:    rgba(255,255,255,0.08);
+  --color-primary:   #a855f7;
+  --color-accent:    #6366f1;
+  --color-text:      #e2e8f0;
+  --color-muted:     #94a3b8;
+
+  /* Layout */
+  --nav-height:      60px;
+  --sidebar-width:   260px;
+  --content-max:     1200px;
+  --card-radius:     12px;
 }
 
-a {
-  color: var(--clr-primary);
-  text-decoration: none;
-  transition: color var(--dur-fast) var(--ease),
-              opacity var(--dur-fast) var(--ease);
-}
-a:hover { opacity: 0.8; }
-
-strong, b { font-weight: 700; color: var(--clr-text); }
-small      { font-size: var(--fs-xs); }
-
-/* Brand / nav / logo text */
-.font-brand {
-  font-family: var(--font-brand);
-  letter-spacing: 0.05em;
-}
-
-
-/* ── 5. MEDIA & EMBEDS ────────────────────────────────────────── */
-img, video, svg {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-
-/* Three.js canvas:
-   - Fills its container
-   - Allows vertical page scroll on mobile (pan-y)
-   - Blocks horizontal drag that hijacks scroll */
-canvas {
-  display: block;
-  max-width: 100%;
-  touch-action: pan-y;
-}
-
-
-/* ── 6. SCROLLBARS ────────────────────────────────────────────── */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
-}
-*::-webkit-scrollbar       { width: 5px; height: 5px; }
-*::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.35);
-  border-radius: 10px;
-}
-
-
-/* ── 7. NAVIGATION ────────────────────────────────────────────── */
-/*
-  Matches your existing navbar layout:
-    <nav> logo | links | + New  Dashboard  Logout </nav>
-  Keeps it sticky and prevents overflow on mobile.
-*/
-nav {
+/* ── 4. NAVBAR — MOBILE RESPONSIVE ──────────────────────── */
+nav,
+.navbar,
+[class*="Navbar"],
+[class*="navbar"] {
   position: sticky;
   top: 0;
-  z-index: 100;
-  height: var(--nav-h);
+  z-index: 1000;
+  height: var(--nav-height);
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
-  padding: 0 var(--sp-6);
-
-  /* Respect iPhone notch */
-  padding-left: max(var(--sp-6), env(safe-area-inset-left));
-  padding-right: max(var(--sp-6), env(safe-area-inset-right));
-
-  /* Prevent nav items from wrapping and breaking layout */
-  overflow: hidden;
-  white-space: nowrap;
+  padding: 0 var(--sp-lg);
+  /* Prevent content from touching nav edges on small screens */
+  gap: var(--sp-sm);
 }
 
-/* Nav links group — right side */
-.nav-links {
+/* Nav links — hide overflow on small screens */
+.nav-links,
+[class*="nav-links"],
+[class*="NavLinks"] {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
-  margin-left: auto;
+  gap: var(--sp-sm);
   overflow: hidden;
 }
 
-.nav-link {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--clr-text-muted);
-  transition: color var(--dur-fast) var(--ease);
-}
-.nav-link:hover { color: var(--clr-text); }
-
-
-/* ── 8. DASHBOARD LAYOUT ──────────────────────────────────────── */
+/* ── 5. DASHBOARD LAYOUT — RESPONSIVE GRID ──────────────── */
 /*
-  Your dashboard: sidebar (profile + stats) on left, main content right.
-  On mobile: sidebar stacks on top, full width.
+  Your dashboard uses a sidebar + main column layout.
+  This makes it collapse properly on mobile.
 */
-.dashboard-layout {
+.dashboard,
+[class*="dashboard"],
+[class*="Dashboard"] {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
-  gap: var(--sp-8);
-  width: 100%;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  gap: var(--sp-xl);
+  padding: var(--sp-xl) var(--sp-lg);
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--sp-8) var(--sp-6);
-  min-height: calc(100vh - var(--nav-h));
-  align-items: start;
+  min-height: calc(100vh - var(--nav-height));
 }
 
 /* Sidebar */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  position: sticky;
-  top: calc(var(--nav-h) + var(--sp-4));
+.sidebar,
+[class*="sidebar"],
+[class*="Sidebar"] {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
 }
 
-/* Main content area */
-.main-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-6);
-  min-width: 0; /* prevent grid blowout */
-}
-
-
-/* ── 9. CARDS ─────────────────────────────────────────────────── */
+/* ── 6. PROJECT CARDS — RESPONSIVE GRID ─────────────────── */
 /*
-  Your project cards — shown in the dashboard "My Projects" grid.
-  Fixes overflow of long project names and button row wrapping.
+  Matches your "My Projects" grid shown in screenshot.
+  Cards stack properly on mobile & tablet.
 */
-.card {
-  background: var(--clr-card);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--card-radius);
-  padding: var(--sp-5);
-  transition: border-color var(--dur-base) var(--ease),
-              background  var(--dur-base) var(--ease),
-              transform   var(--dur-base) var(--ease);
+.projects-grid,
+[class*="projects-grid"],
+[class*="ProjectGrid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: var(--sp-lg);
+}
 
-  /* Prevent long text from overflowing card */
+.project-card,
+[class*="project-card"],
+[class*="ProjectCard"] {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+  padding: var(--sp-lg);
+  /* Prevent card content from overflowing on small screens */
   overflow: hidden;
   word-break: break-word;
-  min-width: 0;
+  /* Smooth hover */
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-.card:hover {
-  background: var(--clr-card-hover);
-  border-color: var(--clr-border-hover);
+.project-card:hover {
   transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.4);
 }
 
-/* Project title inside card */
-.card-title {
-  font-family: var(--font-brand);
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--clr-text);
-  line-height: 1.3;
-
-  /* Clamp to 2 lines — prevents very long names from blowing the card */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Tag / badge row (development, open, etc.) */
-.card-tags {
+/* Project card action buttons row */
+.project-actions,
+[class*="project-actions"],
+[class*="ProjectActions"] {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
+  gap: var(--sp-xs);
+  flex-wrap: wrap;   /* wrap on small screens instead of overflow */
+  margin-top: var(--sp-md);
 }
 
-/* Project card action buttons (View · Edit · Delete) */
-.card-actions {
-  display: flex;
-  flex-wrap: wrap;   /* wrap instead of overflow on narrow screens */
-  gap: var(--sp-2);
-  margin-top: var(--sp-4);
-}
-
-/* Projects grid — auto-fills columns responsively */
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: var(--sp-5);
-}
-
-
-/* ── 10. BADGES / TAGS ────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  font-family: var(--font-body);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  padding: 3px 10px;
-  border-radius: 100px;
-  white-space: nowrap;
-  border: 1px solid transparent;
-}
-
-.badge-primary {
-  background: var(--clr-primary-dim);
-  color: var(--clr-primary);
-  border-color: rgba(168, 85, 247, 0.25);
-}
-.badge-success {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--clr-success);
-  border-color: rgba(16, 185, 129, 0.25);
-}
-.badge-warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--clr-warning);
-  border-color: rgba(245, 158, 11, 0.25);
-}
-.badge-danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--clr-danger);
-  border-color: rgba(239, 68, 68, 0.25);
-}
-
-
-/* ── 11. BUTTONS ──────────────────────────────────────────────── */
+/* ── 7. BUTTONS — TOUCH FRIENDLY ────────────────────────── */
 button,
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-
-  /* WCAG / Apple HIG minimum touch target */
+.btn,
+[class*="btn"],
+[class*="Button"] {
+  /* Minimum touch target: 44×44px (Apple HIG / WCAG) */
   min-height: 44px;
-  padding: 0 var(--sp-4);
-  border-radius: var(--btn-radius);
-  border: 1px solid transparent;
+  min-width: 44px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-
-  /* Remove iOS default button styling */
+  /* Remove default iOS button styles */
   -webkit-appearance: none;
   appearance: none;
-
+  border-radius: 8px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
   /* Prevent text selection on double-tap */
   user-select: none;
   -webkit-user-select: none;
-
-  transition: background  var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              opacity     var(--dur-fast) var(--ease),
-              transform   var(--dur-fast) var(--ease);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;   /* prevent button text wrapping */
 }
 
 button:active,
@@ -418,387 +196,353 @@ button:active,
   transform: scale(0.97);
 }
 
-/* Variants */
-.btn-primary {
-  background: var(--clr-primary);
-  color: #fff;
-  border-color: var(--clr-primary);
-}
-.btn-primary:hover {
-  background: #9333ea;
-  border-color: #9333ea;
+/* Remove default focus outline, add custom one */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.btn-outline {
-  background: transparent;
-  color: var(--clr-primary);
-  border-color: var(--clr-primary);
-}
-.btn-outline:hover {
-  background: var(--clr-primary-dim);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--clr-text-muted);
-  border-color: var(--clr-border);
-}
-.btn-ghost:hover {
-  background: rgba(255,255,255,0.05);
-  color: var(--clr-text);
-}
-
-.btn-danger {
-  background: transparent;
-  color: var(--clr-danger);
-  border-color: rgba(239, 68, 68, 0.4);
-}
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.btn-sm {
-  min-height: 36px;
-  font-size: var(--fs-xs);
-  padding: 0 var(--sp-3);
-}
-
-
-/* ── 12. FORM INPUTS ──────────────────────────────────────────── */
+/* ── 8. FORM INPUTS — CROSS-PLATFORM ────────────────────── */
 input,
 textarea,
 select {
-  width: 100%;
-  font-family: var(--font-body);
-  /* 16px minimum PREVENTS iOS from zooming in on focus */
+  font-family: inherit;
+  font-size: var(--fs-base);   /* prevent iOS zoom-in on focus (needs >= 16px) */
   font-size: max(16px, var(--fs-base));
-  font-weight: 400;
-  color: var(--clr-text);
-  background: var(--clr-surface);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--input-radius);
-  padding: 0.625rem 0.875rem;
-  outline: none;
   -webkit-appearance: none;
   appearance: none;
-  transition: border-color var(--dur-fast) var(--ease),
-              background   var(--dur-fast) var(--ease);
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: var(--clr-primary);
-  background: var(--clr-card);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--clr-text-faint);
+  color: var(--color-muted);
 }
 
-textarea {
-  resize: vertical;
-  min-height: 100px;
-  line-height: 1.6;
-}
-
-/* Custom select arrow */
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.875rem center;
-  padding-right: 2.5rem;
-  cursor: pointer;
-}
-
-label {
+/* ── 9. IMAGES & MEDIA ───────────────────────────────────── */
+img,
+video,
+svg,
+canvas {
+  max-width: 100%;
+  height: auto;
   display: block;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--clr-text-muted);
-  margin-bottom: var(--sp-2);
-  letter-spacing: 0.02em;
 }
 
-/* Focus ring for keyboard users */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--clr-primary);
-  outline-offset: 2px;
+/* Three.js canvas fix — prevents scroll hijack on mobile */
+canvas {
+  touch-action: pan-y;   /* allow vertical scroll, block horizontal */
 }
 
-
-/* ── 13. UTILITY CLASSES ──────────────────────────────────────── */
-
-/* Layout */
-.container {
+/* ── 10. THREE.JS 3D HERO — MOBILE FIX ──────────────────── */
+/*
+  Your Scene3D / hero canvas can cause performance issues and
+  scroll hijack on mobile. These rules fix that.
+*/
+.hero-scene,
+[class*="Scene3D"],
+[class*="hero"],
+[class*="Hero"] {
   width: 100%;
-  max-width: var(--content-max);
-  margin-inline: auto;
-  padding-inline: var(--sp-6);
-}
-
-.flex         { display: flex; }
-.flex-center  { display: flex; align-items: center; justify-content: center; }
-.flex-between { display: flex; align-items: center; justify-content: space-between; }
-.flex-col     { display: flex; flex-direction: column; }
-.flex-wrap    { flex-wrap: wrap; }
-.items-center { align-items: center; }
-.gap-2        { gap: var(--sp-2); }
-.gap-3        { gap: var(--sp-3); }
-.gap-4        { gap: var(--sp-4); }
-
-/* Text */
-.text-primary { color: var(--clr-primary); }
-.text-muted   { color: var(--clr-text-muted); }
-.text-faint   { color: var(--clr-text-faint); }
-.text-sm      { font-size: var(--fs-sm); }
-.text-xs      { font-size: var(--fs-xs); }
-.font-600     { font-weight: 600; }
-.font-700     { font-weight: 700; }
-
-/* Truncate single line */
-.truncate {
+  height: 100%;
+  position: relative;
+  /* Prevent iOS overscroll from interfering with canvas */
+  -webkit-overflow-scrolling: touch;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* Screen-reader only (accessibility) */
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Skip to content — keyboard navigation */
-.skip-link {
-  position: absolute;
-  top: -50px; left: var(--sp-4);
-  background: var(--clr-primary);
-  color: #fff;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: 0 0 var(--btn-radius) var(--btn-radius);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  z-index: 9999;
-  transition: top var(--dur-fast) var(--ease);
-}
-.skip-link:focus { top: 0; }
-
-/* Divider */
-.divider {
-  height: 1px;
-  background: var(--clr-border);
-  margin: var(--sp-4) 0;
-}
-
-
-/* ── 14. MOBILE BREAKPOINTS ───────────────────────────────────── */
-
-/* ── TABLET  ≤ 1024px ── */
-@media (max-width: 1024px) {
-  :root {
-    --sidebar-w: 240px;
-  }
-
-  .dashboard-layout {
-    gap: var(--sp-6);
-    padding: var(--sp-6) var(--sp-4);
+/* On very small screens, reduce canvas height to save battery/perf */
+@media (max-width: 480px) {
+  .hero-scene,
+  [class*="Scene3D"],
+  [class*="canvas-container"] {
+    height: 50vh !important;
+    max-height: 400px;
   }
 }
 
-/* ── TABLET  ≤ 768px ── */
+/* ── 11. SCROLLBARS — CROSS-BROWSER ─────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 10px;
+}
+
+/* ── 12. SAFE AREA — IPHONE NOTCH / BOTTOM BAR ──────────── */
+.app-root,
+#root {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+nav {
+  padding-left: max(var(--sp-lg), env(safe-area-inset-left));
+  padding-right: max(var(--sp-lg), env(safe-area-inset-right));
+}
+
+/* ── 13. RESPONSIVE BREAKPOINTS ─────────────────────────── */
+
+/* — TABLET (768px and below) ——————————————————————————— */
 @media (max-width: 768px) {
-  /* ① Dashboard: sidebar moves above main, full width */
-  .dashboard-layout {
+  /* Dashboard: sidebar goes above main */
+  .dashboard,
+  [class*="dashboard"],
+  [class*="Dashboard"] {
     grid-template-columns: 1fr;
-    padding: var(--sp-4) var(--sp-4);
-    gap: var(--sp-4);
+    padding: var(--sp-md);
+    gap: var(--sp-lg);
   }
 
-  /* ② Sidebar: horizontal wrap instead of vertical column */
-  .sidebar {
-    position: static;       /* un-sticky */
-    flex-direction: row;
+  /* Sidebar becomes horizontal on tablet */
+  .sidebar,
+  [class*="sidebar"],
+  [class*="Sidebar"] {
+    width: 100%;
+    display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-3);
+    gap: var(--sp-sm);
     align-items: flex-start;
   }
 
-  /* Profile card inside sidebar fills full width */
-  .sidebar > * { flex: 1 1 200px; }
-
-  /* ③ Nav: tighten spacing */
-  nav {
-    padding: 0 var(--sp-4);
-    gap: var(--sp-3);
+  /* Stats box on sidebar: row layout */
+  .stats-box,
+  [class*="stats"],
+  [class*="Stats"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-sm);
   }
 
-  /* Hide less important nav labels */
-  .nav-label-hide { display: none; }
+  /* Nav: hide text labels, keep icons */
+  .nav-label {
+    display: none;
+  }
 
-  /* ④ Projects grid: 1 column */
+  /* Projects grid: 1 column on tablet */
   .projects-grid {
     grid-template-columns: 1fr;
   }
-
-  /* ⑤ Card action buttons: allow wrapping */
-  .card-actions {
-    flex-wrap: wrap;
-  }
 }
 
-/* ── MOBILE  ≤ 480px ── */
+/* — MOBILE (480px and below) ——————————————————————————— */
 @media (max-width: 480px) {
-  :root {
-    --nav-h: 56px;
+  /* Nav: stack or hamburger */
+  nav {
+    padding: 0 var(--sp-md);
   }
 
-  /* Container edge padding */
-  .container { padding-inline: var(--sp-4); }
-
-  /* Dashboard padding */
-  .dashboard-layout {
-    padding: var(--sp-3) var(--sp-3);
-  }
-
-  /* Nav: minimal */
-  nav { padding: 0 var(--sp-3); }
-
-  /* Full-width action buttons on mobile */
-  .card-actions {
+  /* Card actions: full-width stacked buttons */
+  .project-actions,
+  [class*="project-actions"] {
     flex-direction: column;
   }
-  .card-actions button,
-  .card-actions .btn {
+
+  .project-actions button,
+  [class*="project-actions"] button {
     width: 100%;
+    justify-content: center;
   }
 
-  /* Profile block center-aligned */
-  .profile-card {
+  /* Profile card: center on mobile */
+  .profile-card,
+  [class*="profile"] {
     text-align: center;
     align-items: center;
   }
 
-  /* Stats row: equal columns */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-2);
-  }
+  /* Typography scale down */
+  h1 { font-size: var(--fs-2xl); }
+  h2 { font-size: var(--fs-xl); }
+  h3 { font-size: var(--fs-lg); }
+}
 
-  /* Slightly scale down headings */
-  h1 { letter-spacing: -0.03em; }
-
-  /* Tabs / toggle pills become full width */
-  .tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
+/* — LARGE SCREENS (1400px+) ———————————————————————————— */
+@media (min-width: 1400px) {
+  :root {
+    --sidebar-width: 300px;
+    --content-max: 1400px;
   }
 }
 
-/* ── VERY SMALL  ≤ 360px ── */
-@media (max-width: 360px) {
-  :root { --nav-h: 52px; }
-  nav { gap: var(--sp-2); }
-  .nav-links { gap: var(--sp-2); }
-
-  .card { padding: var(--sp-4); }
-
-  /* Stats: stack vertically on tiny screens */
-  .stats-grid { grid-template-columns: 1fr; }
-}
-
-
-/* ── 15. THREE.JS HERO — MOBILE PERF ─────────────────────────── */
-/*
-  Reduce canvas height on small screens to save battery + GPU.
-  Add className="hero-canvas" to your <Canvas> wrapper div.
-*/
-.hero-canvas {
-  width: 100%;
-  overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  .hero-canvas { height: 60vh !important; }
-}
-@media (max-width: 480px) {
-  .hero-canvas { height: 45vh !important; max-height: 360px; }
-}
-
-
-/* ── 16. MODALS & OVERLAYS ────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sp-4);
-  /* Respect iPhone bottom bar */
-  padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom));
-}
-
-.modal-box {
-  background: var(--clr-card);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--card-radius);
-  padding: var(--sp-6);
-  width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-
-/* ── 17. REDUCED MOTION ───────────────────────────────────────── */
-/*
-  Respects OS-level "Reduce Motion" setting.
-  Disables all animations / transitions for users who need it.
-*/
+/* ── 14. MOTION — RESPECT USER PREFERENCE ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration:       0.01ms !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration:      0.01ms !important;
-    scroll-behavior:          auto !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable Three.js animation loop hint for devs */
+  .hero-scene,
+  [class*="Scene3D"] {
+    opacity: 0.6;   /* keep visible but hint that motion is off */
   }
 }
 
+/* ── 15. DARK MODE — SYSTEM PREFERENCE ──────────────────── */
+/* Your app is already dark, but ensure system-level preference is respected */
+@media (prefers-color-scheme: light) {
+  /* Only apply if user hasn't chosen a theme in your app */
+  /* Add class="system-theme" to <html> and remove this if using manual theme toggle */
+}
 
-/* ── 18. PRINT ────────────────────────────────────────────────── */
+/* ── 16. PRINT STYLES ───────────────────────────────────── */
 @media print {
   nav,
   .sidebar,
-  .hero-canvas,
-  canvas,
-  .card-actions { display: none !important; }
+  [class*="sidebar"],
+  .hero-scene,
+  [class*="Scene3D"],
+  canvas {
+    display: none !important;
+  }
 
   body {
     background: white !important;
     color: black !important;
   }
 
-  .card {
+  .project-card {
     border: 1px solid #ccc !important;
-    background: white !important;
     break-inside: avoid;
-    color: black !important;
   }
+}
+
+/* ── 17. FOCUS & ACCESSIBILITY ──────────────────────────── */
+/* Skip to content link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 9999;
+  border-radius: 0 0 8px 0;
+  font-size: 14px;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  button, .btn { border: 2px solid ButtonText; }
+  input, textarea, select { border: 2px solid ButtonText; }
+}
+
+/* ── 18. UTILITY CLASSES ────────────────────────────────── */
+/* Add these to JSX as needed */
+
+.container {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--sp-lg);
+  width: 100%;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--sp-lg);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 19. BADGE / PILL FIXES ─────────────────────────────── */
+/* Your "development" and "open" status badges */
+.badge,
+[class*="badge"],
+[class*="Badge"],
+[class*="tag"],
+[class*="Tag"] {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ── 20. MODAL / OVERLAY FIX ────────────────────────────── */
+.modal-overlay,
+[class*="modal"],
+[class*="Modal"] {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-lg);
+  /* Prevent body scroll when modal open — add JS: document.body.style.overflow='hidden' */
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 560px;
+  border-radius: var(--card-radius);
+  /* Scrollable on mobile */
+  -webkit-overflow-scrolling: touch;
 }
