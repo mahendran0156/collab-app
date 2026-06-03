@@ -10,10 +10,9 @@ const categories = [
 ]
 
 const stats = [
-  { value:'2,400+', label:'Creators'    },
-  { value:'850+',   label:'Projects'    },
-  { value:'12K+',   label:'Collabs'     },
-  { value:'98%',    label:'Success Rate'},
+  { value:'1+', label:'Creators'    },
+  { value:'3+',   label:'Projects'    },
+  { value:'2+',   label:'Collabs'     },
 ]
 
 export default function Home() {
