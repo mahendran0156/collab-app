@@ -11,7 +11,7 @@ const categories = [
 
 const stats = [
   { value:'1+', label:'Creators'    },
-  
+
   { value:'3+',   label:'Projects'    },
   
   { value:'2+',   label:'Collabs'     },
@@ -68,10 +68,14 @@ export default function Home() {
 
       {/* ── STATS ────────────────────────────────────────────────── */}
       <section style={{
-        padding:'60px 40px',
+        padding:'3rem 2rem',
         background:'rgba(168,85,247,0.04)',
         borderTop:'1px solid rgba(168,85,247,0.12)',
         borderBottom:'1px solid rgba(168,85,247,0.12)',
+        justifyContent:'center',
+        alignItems:'center',
+        gap:'4rem',
+        display:'flex'
       }}>
         <div style={{ maxWidth:900, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20 }}>
           {stats.map(s => (
